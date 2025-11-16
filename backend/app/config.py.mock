@@ -1,0 +1,24 @@
+# load environment variables in .env.development 
+
+import os
+from dotenv import load_dotenv
+
+# Try to load .env.development first, fallback to .env
+if os.path.exists(".env.development"):
+    load_dotenv(".env.development")
+else:
+    load_dotenv(".env")
+
+# API mode: "mock" for development, "real" for production/testing
+API_MODE = os.getenv("API_MODE", "mock")
+
+# API keys
+OPENAI_KEY = os.getenv("OPENAI_API_KEY")
+ANTHROPIC_KEY = os.getenv("ANTHROPIC_API_KEY")
+DEEPSEEK_KEY = os.getenv("DEEPSEEK_API_KEY")
+
+# Database URL
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./dev.db")
+
+# Debug print (optional, can remove in production)
+print(f"[Config] API_MODE={API_MODE}, DB={DATABASE_URL}")

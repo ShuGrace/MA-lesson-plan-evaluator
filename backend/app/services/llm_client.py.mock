@@ -1,0 +1,50 @@
+# app/services/llm_client.py
+import openai
+import anthropic
+from deepseek import DeepSeekClient
+from app.config import OPENAI_KEY, ANTHROPIC_KEY, DEEPSEEK_KEY
+
+# Initialize clients
+openai.api_key = OPENAI_KEY
+anthropic_client = anthropic.Anthropic(api_key=ANTHROPIC_KEY)
+deepseek_client = DeepSeekClient(api_key=DEEPSEEK_KEY)
+
+
+class LLMClient:
+    def __init__(self):
+        self.clients = {
+            "chatgpt": openai,
+            "claude": anthropic_client,
+            "deepseek": deepseek_client
+        }
+
+    async def call(self, provider: str, prompt: str) -> str:
+        """
+        Call the specified LLM and return the response text.
+        provider: "chatgpt" | "claude" | "deepseek"
+        prompt: user input text
+        """
+        if provider == "chatgpt":
+            response = self.clients["chatgpt"].chat.completions.create(
+                model="gpt-4",
+                messages=[{"role": "user", "content": prompt}]
+            )
+            return response.choices[0].message.content
+
+        elif provider == "claude":
+            response = self.clients["claude"].messages.create(
+                model="claude-2.1",
+                max_tokens=500,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            return response.content[0].text
+
+        elif provider == "deepseek":
+            response = self.clients["deepseek"].chat_completion(
+                model="deepseek-chat",
+                messages=[{"role": "user", "content": prompt}]
+            )
+            return response.choices[0].message.content
+
+        else:
+            raise ValueError(f"Unsupported provider: {provider}")
