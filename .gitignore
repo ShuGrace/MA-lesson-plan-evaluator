@@ -1,0 +1,50 @@
+# 前端依赖
+node_modules/
+dist/
+build/
+.next/
+out/
+
+# 后端依赖
+backend/venv/
+backend/.venv/
+backend/__pycache__/
+**/__pycache__/
+**/*.pyc
+
+# 环境变量
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+backend/.env
+
+# 数据库
+*.db
+*.sqlite3
+
+# 日志
+*.log
+logs/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 备份文件
+*.backup*
+*.mock
+*.real
+
+# 测试
+.pytest_cache/
+coverage/
+.coverage
+htmlcov/
