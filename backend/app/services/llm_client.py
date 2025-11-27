@@ -1,9 +1,7 @@
-
+# app/services/llm_client.py
 """
-LLM Client with role assignments:
-- Claude: Cultural Responsiveness Evaluator (Indigenous Education Expert)
-- DeepSeek: Place-Based Learning Evaluator (Community Resources Integration)
-- GPT-4: Critical Pedagogy, Assessment Quality & Reflective Practice Evaluator
+LLM Client - Framework v3.0
+✅ 4 Agents: DeepSeek (PBL), Claude (CRMP), GPT-Critical (CP), GPT-Design (LDQ)
 """
 import asyncio
 import json
@@ -11,42 +9,58 @@ from typing import Optional
 from app.config import (
     API_MODE, OPENAI_KEY, ANTHROPIC_KEY, DEEPSEEK_KEY,
     OPENAI_MODEL, ANTHROPIC_MODEL, DEEPSEEK_MODEL, DEEPSEEK_BASE_URL,
-    API_TIMEOUT, MAX_RETRIES
+    API_TIMEOUT, API_MAX_RETRIES, ENABLE_DEEPSEEK, ENABLE_CLAUDE, ENABLE_GPT
 )
 
 
 class LLMClient:
-    """Unified LLM Client for Multi-Model Support"""
+    """
+    Unified LLM Client for Multi-Model Support - Framework v3.0
+    
+    Agents (v3.0):
+    - DeepSeek: Place-Based Learning Specialist (PBL)
+    - Claude: Cultural Responsiveness & Māori Perspectives Specialist (CRMP - Integrated)
+    - GPT (chatgpt): Shared for Critical Pedagogy (CP) and Lesson Design Quality (LDQ)
+    """
     
     def __init__(self):
         self.timeout = API_TIMEOUT
-        self.max_retries = MAX_RETRIES
+        self.max_retries = API_MAX_RETRIES
         self._init_clients()
     
     def _init_clients(self):
         """Initialize all LLM clients with error handling"""
-        # Initialize ChatGPT (GPT-4) - Critical Pedagogy & Assessment Evaluator
-        if OPENAI_KEY:  # ✅ 移除硬编码的密钥检查
+        print(f"\n[LLM] Initializing clients (Framework v3.0)...")
+        
+        # ==========================================
+        # GPT (OpenAI) - for GPT-Critical and GPT-Design
+        # ==========================================
+        if OPENAI_KEY and ENABLE_GPT:
             try:
                 from openai import AsyncOpenAI
                 self.openai_client = AsyncOpenAI(api_key=OPENAI_KEY, timeout=self.timeout)
-                print("[LLM] ✅ ChatGPT initialized (Critical Pedagogy & Assessment Evaluator)")
+                print("[LLM] ✅ GPT initialized (Critical Pedagogy & Lesson Design Quality)")
             except ImportError:
                 print("[LLM] ❌ WARNING: openai package not installed")
                 self.openai_client = None
             except Exception as e:
-                print(f"[LLM] ❌ Failed to initialize ChatGPT: {e}")
+                print(f"[LLM] ❌ Failed to initialize GPT: {e}")
                 self.openai_client = None
         else:
             self.openai_client = None
-            print("[LLM] ⚠️ ChatGPT not configured (no OPENAI_API_KEY)")
+            if not OPENAI_KEY:
+                print("[LLM] ⚠️  GPT not configured (no OPENAI_API_KEY)")
+            elif not ENABLE_GPT:
+                print("[LLM] ⚠️  GPT disabled (ENABLE_GPT=false)")
         
-        # Initialize Claude - Cultural Responsiveness Evaluator
-        if ANTHROPIC_KEY:  # ✅ 移除硬编码的密钥检查
+        # ==========================================
+        # Claude (Anthropic) - for CRMP (Integrated)
+        # ==========================================
+        if ANTHROPIC_KEY and ENABLE_CLAUDE:
             try:
                 from anthropic import AsyncAnthropic
                 self.claude_client = AsyncAnthropic(api_key=ANTHROPIC_KEY, timeout=self.timeout)
-                print("[LLM] ✅ Claude initialized (Cultural Responsiveness Evaluator)")
+                print("[LLM] ✅ Claude initialized (Cultural Responsiveness & Māori Perspectives - Integrated)")
             except ImportError:
                 print("[LLM] ❌ WARNING: anthropic package not installed")
                 self.claude_client = None
@@ -55,10 +69,15 @@ class LLMClient:
                 self.claude_client = None
         else:
             self.claude_client = None
-            print("[LLM] ⚠️ Claude not configured (no ANTHROPIC_API_KEY)")
+            if not ANTHROPIC_KEY:
+                print("[LLM] ⚠️  Claude not configured (no ANTHROPIC_API_KEY)")
+            elif not ENABLE_CLAUDE:
+                print("[LLM] ⚠️  Claude disabled (ENABLE_CLAUDE=false)")
         
-        # Initialize DeepSeek - Place-Based Learning Evaluator
-        if DEEPSEEK_KEY:  # ✅ 移除硬编码的密钥检查
+        # ==========================================
+        # DeepSeek - for Place-Based Learning
+        # ==========================================
+        if DEEPSEEK_KEY and ENABLE_DEEPSEEK:
             try:
                 from openai import AsyncOpenAI
                 self.deepseek_client = AsyncOpenAI(
@@ -66,7 +85,7 @@ class LLMClient:
                     base_url=DEEPSEEK_BASE_URL,
                     timeout=self.timeout
                 )
-                print("[LLM] ✅ DeepSeek initialized (Place-Based Learning Evaluator)")
+                print("[LLM] ✅ DeepSeek initialized (Place-Based Learning Specialist)")
             except ImportError:
                 print("[LLM] ❌ WARNING: openai package not installed for DeepSeek")
                 self.deepseek_client = None
@@ -75,14 +94,22 @@ class LLMClient:
                 self.deepseek_client = None
         else:
             self.deepseek_client = None
-            print("[LLM] ⚠️ DeepSeek not configured (no DEEPSEEK_API_KEY)")
+            if not DEEPSEEK_KEY:
+                print("[LLM] ⚠️  DeepSeek not configured (no DEEPSEEK_API_KEY)")
+            elif not ENABLE_DEEPSEEK:
+                print("[LLM] ⚠️  DeepSeek disabled (ENABLE_DEEPSEEK=false)")
 
     async def call(self, provider: str, prompt: str, **kwargs) -> str:
         """
         Call the specified LLM and return the response text.
-        provider: "chatgpt" | "claude" | "deepseek"
-        prompt: user input text
-        **kwargs: additional parameters (temperature, max_tokens, etc.)
+        
+        Args:
+            provider: "chatgpt" | "claude" | "deepseek"
+            prompt: user input text
+            **kwargs: additional parameters (temperature, max_tokens, etc.)
+        
+        Returns:
+            str: LLM response text
         """
         provider = provider.lower()
         
@@ -112,9 +139,9 @@ class LLMClient:
                     raise
 
     async def _call_chatgpt(self, prompt: str, **kwargs) -> str:
-        """Call ChatGPT API"""
+        """Call ChatGPT API (GPT-4o)"""
         if not self.openai_client:
-            raise ValueError("ChatGPT client not initialized")
+            raise ValueError("GPT client not initialized")
         
         response = await self.openai_client.chat.completions.create(
             model=kwargs.get('model', OPENAI_MODEL),
@@ -126,18 +153,65 @@ class LLMClient:
         return response.choices[0].message.content
 
     async def _call_claude(self, prompt: str, **kwargs) -> str:
-        """Call Claude API - FIXED VERSION"""
+        """Call Claude API (Sonnet 4) with enhanced formatting control for narrative output"""
         if not self.claude_client:
             raise ValueError("Claude client not initialized")
         
-        # Create message using AsyncAnthropic client
+        # ✅ System prompt - 定义 Claude 的角色和输出规则
+        system_prompt = """You are an expert educator in Aotearoa New Zealand writing professional lesson plans.
+
+    CRITICAL OUTPUT RULES:
+    1. Write in flowing narrative paragraphs (like an article or professional document)
+    2. NEVER use numbered sections like 1.1, 1.2, 2.1, 2.2
+    3. NEVER use Python list syntax like ['item1', 'item2']
+    4. NEVER output JSON, dictionary, or code-like formats
+    5. Use markdown headings (##) but all content must be natural paragraphs
+
+    Example of CORRECT format:
+    **Overview:**
+    This lesson for upper primary students explores cultural concepts through hands-on activities. Students begin by discussing their prior knowledge...
+
+    Example of WRONG format (NEVER DO THIS):
+    1.1 Knowledge: ['concept1', 'concept2']
+    **Assessment**
+    7.1 Formative: ...
+
+    Your output must read naturally, as if written by a human teacher for other teachers."""
+        
+        # ✅ 对教案生成请求强化格式要求
+        if "IMPROVED LESSON PLAN" in prompt or "improve" in prompt.lower() and "lesson" in prompt.lower():
+            enhanced_prompt = f"""<<FORMAT INSTRUCTION>>
+    You MUST write this lesson plan in flowing narrative paragraphs.
+    Before starting, internally confirm: "I will write naturally in paragraphs, not numbered lists."
+
+    {prompt}
+
+    <<VERIFICATION>>
+    After writing, check: Does your output contain "1.1" or "['..." ? If yes, REWRITE in narrative form."""
+        else:
+            enhanced_prompt = prompt
+        
+        # ✅ 调用 Claude API
         message = await self.claude_client.messages.create(
             model=kwargs.get('model', ANTHROPIC_MODEL),
             max_tokens=kwargs.get('max_tokens', 4000),
-            messages=[{"role": "user", "content": prompt}]
+            temperature=kwargs.get('temperature', 0.8),  # 增加创造性，避免模板化
+            system=system_prompt,
+            messages=[{"role": "user", "content": enhanced_prompt}]
         )
         
-        # Extract text from response
+        response_text = message.content[0].text
+        
+        # ✅ 后处理验证和日志
+        if "1.1" in response_text or "1.2" in response_text or "['Understanding" in response_text:
+            print("[LLM] ⚠️  WARNING: Claude output still contains structured format!")
+            print(f"[LLM] First 500 chars: {response_text[:500]}")
+            print("[LLM] This may require additional prompt engineering or post-processing")
+        else:
+            print("[LLM] ✅ Claude output appears to be in narrative format")
+        
+        return response_text
+        
         return message.content[0].text
 
     async def _call_deepseek(self, prompt: str, **kwargs) -> str:
@@ -155,89 +229,52 @@ class LLMClient:
         return response.choices[0].message.content
 
     async def _mock_response(self, provider: str, prompt: str) -> str:
-        """Generate mock responses for testing"""
+        """Generate mock responses for testing - Framework v3.0"""
         await asyncio.sleep(0.5)  # Simulate network delay
         
-        if "Place-Based" in prompt or "place-based" in prompt.lower():
+        if "place-based" in prompt.lower() or "place based" in prompt.lower():
             return json.dumps({
-                "score": 85,
-                "strengths": ["Strong local community connections", "Effective use of local resources"],
-                "weaknesses": ["Limited field trip opportunities"],
-                "recommendations": ["Add more local case studies", "Include community partnerships"]
+                "score": 72,
+                "strengths": ["Uses local examples", "Connects to community"],
+                "areas_for_improvement": ["Specify local landmarks", "Add iwi partnerships"],
+                "recommendations": ["Name specific local places", "Partner with local organizations"]
             })
-        elif "Cultural" in prompt or "cultural" in prompt.lower():
+        elif "cultural" in prompt.lower() and "integrated" in prompt.lower():
+            # ✅ v3.0: Integrated cultural response
+            return json.dumps({
+                "score": 68,
+                "strengths": ["Acknowledges cultural context", "Includes some Te Reo"],
+                "areas_for_improvement": ["Limited mātauranga Māori depth", "More Te Reo needed"],
+                "gaps": ["Māori knowledge not central", "Limited iwi consultation"],
+                "cultural_elements_present": ["Tikanga references", "Basic Te Reo"],
+                "recommendations": ["Consult with local iwi", "Embed mātauranga Māori more deeply"]
+            })
+        elif "critical pedagogy" in prompt.lower():
+            return json.dumps({
+                "score": 75,
+                "strengths": ["Some critical questions", "Discussion opportunities"],
+                "areas_for_improvement": ["Limited student agency", "Could be more dialogic"],
+                "recommendations": ["Increase student choice", "Add critical reflection"]
+            })
+        elif "lesson design" in prompt.lower() or "design quality" in prompt.lower():
+            # ✅ v3.0: New lesson design mock
             return json.dumps({
                 "score": 78,
-                "strengths": ["Acknowledges Maori perspectives"],
-                "weaknesses": ["Limited te reo Maori usage"],
-                "recommendations": ["Incorporate more te reo Maori", "Add cultural protocols"]
+                "strengths": ["Clear objectives", "Logical structure"],
+                "areas_for_improvement": ["Assessment criteria unclear", "Limited differentiation"],
+                "recommendations": ["Add explicit rubrics", "Include differentiation strategies"]
             })
-        elif "Critical Pedagogy" in prompt or "critical" in prompt.lower():
+        elif "improve" in prompt.lower() or "generate" in prompt.lower():
             return json.dumps({
-                "score": 82,
-                "strengths": ["Encourages critical questioning"],
-                "weaknesses": ["Could promote more student voice"],
-                "recommendations": ["Add critical thinking activities", "Include social justice themes"]
-            })
-        elif "Assessment" in prompt or "assessment" in prompt.lower():
-            return json.dumps({
-                "score": 80,
-                "strengths": ["Clear success criteria"],
-                "weaknesses": ["Limited formative assessment"],
-                "recommendations": ["Add more ongoing assessments", "Include peer feedback"]
-            })
-        elif "Reflective" in prompt or "reflective" in prompt.lower():
-            return json.dumps({
-                "score": 76,
-                "strengths": ["Some reflection activities"],
-                "weaknesses": ["Could be more structured"],
-                "recommendations": ["Add reflection journals", "Include metacognitive prompts"]
-            })
-        elif "improve" in prompt.lower() or "generator" in prompt.lower() or "generate" in prompt.lower():
-            return json.dumps({
-                "knowledge": "Students will develop comprehensive understanding of key concepts.",
-                "skills": "Students will develop critical analysis and practical skills.",
-                "values": "Students will appreciate cultural diversity and Indigenous perspectives.",
-                "prior_knowledge": "Students bring varied experiences from previous lessons.",
-                "interests": "Topics connect to students' everyday experiences.",
-                "challenges": "Varying literacy levels and learning paces.",
-                "learning_styles": "Visual, auditory, and kinesthetic learners.",
-                "accommodations": "Differentiated materials and support.",
-                "key_concepts": "Core curriculum concepts with local context.",
-                "focus_challenges": "Abstract concepts requiring scaffolding.",
-                "methods": "Place-based learning and collaborative inquiry.",
-                "strategies": "Think-pair-share, jigsaw, project-based learning.",
-                "teacher_prep": "Review materials, prepare resources.",
-                "student_prep": "Prior reading, gather materials.",
-                "intro_duration": "20",
-                "intro_tasks": "Activate prior knowledge.",
-                "intro_teacher_actions": "Facilitate discussion, present objectives.",
-                "intro_student_activities": "Share ideas, ask questions.",
-                "main_duration": "40",
-                "main_tasks": "Explore key concepts.",
-                "main_teacher_actions": "Teach, model, check understanding.",
-                "main_student_activities": "Take notes, practice skills.",
-                "investigation_duration": "45",
-                "investigation_tasks": "Hands-on investigation.",
-                "investigation_teacher_actions": "Guide inquiry, facilitate groups.",
-                "investigation_student_activities": "Investigate, collaborate, analyze.",
-                "conclusion_duration": "15",
-                "conclusion_tasks": "Synthesize learning.",
-                "conclusion_teacher_actions": "Summarize, facilitate reflection.",
-                "conclusion_student_activities": "Share insights, reflect.",
-                "extension_duration": "Ongoing",
-                "extension_tasks": "Extend beyond classroom.",
-                "extension_teacher_actions": "Provide resources, support projects.",
-                "extension_student_activities": "Independent research.",
-                "formative": "Observation, questioning, exit tickets.",
-                "summative": "Project, written assessment.",
-                "feedback": "Regular feedback during activities.",
-                "materials": "Handouts, manipulatives, digital resources.",
-                "tech_tools": "Interactive whiteboard, tablets."
+                "knowledge": "Comprehensive understanding of key concepts",
+                "skills": "Critical analysis and practical skills",
+                "values": "Cultural diversity and Indigenous perspectives",
+                "materials": "Handouts, digital resources",
+                "tech_tools": "Interactive whiteboard, tablets"
             })
         else:
             return json.dumps({
-                "score": 75,
+                "score": 70,
                 "recommendations": ["General improvement suggestion"]
             })
 

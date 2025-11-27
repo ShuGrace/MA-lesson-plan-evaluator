@@ -1,0 +1,234 @@
+                try:
+                    improvement_prompt = f"""You are an experienced educator in Aotearoa New Zealand. Improve this lesson plan based on evaluation feedback.
+
+**⚠️ CRITICAL OUTPUT FORMAT REQUIREMENT ⚠️**
+You MUST write as a narrative lesson plan document, NOT as code or structured data.
+❌ DO NOT use Python lists like ['item1', 'item2', 'item3']
+❌ DO NOT use numbered sections like 1.1, 1.2, 2.1
+❌ DO NOT format output as JSON or dictionary
+✅ DO write in flowing narrative paragraphs like a real lesson plan
+✅ DO write naturally as if you're a teacher writing for other teachers
+
+═══════════════════════════════════════════════════════════
+EXAMPLE OF CORRECT FORMAT (FOLLOW THIS STYLE):
+═══════════════════════════════════════════════════════════
+
+**IMPROVED LESSON PLAN: WAKA - CULTURALLY INTEGRATED**
+
+**Overview:**
+This improved lesson for upper primary students integrates three Te Reo Māori terms: waka (canoe/vessel), kaitiakitanga (environmental guardianship), and moana (ocean). Students will explore the cultural significance of waka for local iwi such as Ngāti Whātua (Auckland) or Ngāi Tahu (South Island), connect to local waterways like the Waitematā Harbour or Avon River, and critically examine whose maritime stories are usually told versus whose might be missing. They will compare Māori waka traditions with Pacific and global seafaring cultures.
+
+**Learning Objectives:**
+By the end of this lesson, students will be able to: First, use at least one Te Reo Māori term correctly with proper macrons, such as waka, moana, or kaitiakitanga, in both spoken and written contexts. Second, explain how waka connects to Māori cultural values like whanaungatanga (relationships) and whakapapa (genealogy). Third, identify at least two different perspectives on maritime traditions, such as Māori versus Pākehā views, or different iwi practices. Fourth, create a visual, oral, or written presentation demonstrating their understanding of waka's cultural significance.
+
+[Continue in this flowing narrative style throughout...]
+
+═══════════════════════════════════════════════════════════
+NOW BEGIN YOUR ACTUAL IMPROVED LESSON PLAN:
+═══════════════════════════════════════════════════════════
+
+You are an experienced educator in Aotearoa New Zealand. Improve this lesson plan based on evaluation feedback.
+
+**CRITICAL INSTRUCTIONS:**
+⚠️ Write specific details, NOT generic templates
+⚠️ Use actual names, NOT placeholders like "[local iwi]"
+⚠️ Write in flowing narrative paragraphs, NOT bullet points or lists (except rubrics/resources)
+⚠️ DO NOT use Python list format ['item1', 'item2']
+⚠️ DO NOT use numbered sections like 1.1, 1.2, 2.1
+
+═══════════════════════════════════════════════════════════
+ORIGINAL LESSON
+═══════════════════════════════════════════════════════════
+Title: {title}
+Grade: {grade_level or 'Not specified'}
+Subject: {subject_area or 'Not specified'}
+
+Original Plan: {text[:3000]}
+
+═══════════════════════════════════════════════════════════
+EVALUATION FEEDBACK
+═══════════════════════════════════════════════════════════
+
+**Scores:**
+- Place-based: {place_based_score}/100
+- Cultural Responsiveness: {cultural_score}/100
+- Critical Pedagogy: {critical_pedagogy_score}/100
+- Lesson Design: {lesson_design_score}/100
+- Overall: {overall_score}/100
+
+**Strengths:** {chr(10).join(f'✅ {{s}}' for s in all_strengths[:6]) if all_strengths else '(Limited strengths)'}
+
+**Gaps:** {chr(10).join(f'❌ {{a}}' for a in all_areas[:6]) if all_areas else '(See recommendations)'}
+
+**Recommendations:** {chr(10).join(f'{{i+1}}. {{rec}}' for i, rec in enumerate(recommendations[:10]))}
+
+═══════════════════════════════════════════════════════════
+REQUIREMENTS (REALISTIC & ACHIEVABLE)
+═══════════════════════════════════════════════════════════
+
+**1. TE REO MĀORI (MINIMUM 3 TERMS):**
+✅ Include at least 3 Te Reo terms with correct macrons (ā, ē, ī, ō, ū)
+✅ Students will use 1-2 terms to achieve "Achieving" level
+
+**Choose from common terms:**
+- Core: Aotearoa, Kia ora, Whānau, Mana, Aroha, Kia kaha
+- ANZAC: Maumahara (remembrance), Pakanga (war), Kia kaha
+- Matariki: Whetū (star), Kai (food), Whanaungatanga (relationships)
+- Waitangi: Te Tiriti (Treaty), Rangatira (chief), Whenua (land)
+- Kapa Haka: Waiata (song), Haka (dance), Mana
+- Waka: Waka (canoe), Moana (ocean), Kaitiakitanga (guardianship)
+- General: Tikanga (customs), Karakia (blessing), Marae (meeting grounds)
+
+**Whakataukī (optional):**
+- "Kia kaha, kia māia, kia manawanui" (Be strong, be brave, be steadfast)
+- "He aha te mea nui? He tangata" (What is most important? People)
+- "He waka eke noa" (A canoe we are all in together - for waka topics)
+
+**2. CULTURAL UNDERSTANDING:**
+✅ Explain 1-2 Māori cultural values (e.g., mana, whanaungatanga, kaitiakitanga)
+✅ Show respect when discussing tapu (sacred) topics
+✅ Acknowledge local iwi or Māori perspectives
+
+**3. CRITICAL THINKING (1-2 QUESTIONS):**
+Include at least ONE critical question like:
+- "Whose stories do we usually hear about {title}?"
+- "Why might different people have different feelings about {title}?"
+- "How has {title} changed over time?"
+- "Whose voices might be missing from this narrative?"
+
+**4. PLACE-BASED (1-2 SPECIFIC PLACES):**
+Name at least 1-2 actual local places (choose based on your region):
+- **Auckland:** Ōrākei Marae, Auckland War Memorial Museum, Waitematā Harbour
+- **Wellington:** Te Papa Museum, Pipitea Marae, Wellington Harbour
+- **Canterbury:** Tuahiwi Marae, Canterbury Museum, Avon River
+- **Bay of Plenty:** Ohinemutu Marae, Te Papaiouru Marae, Lake Rotorua
+- **Northland:** Waitangi Treaty Grounds, Bay of Islands
+
+**5. ACTIVITIES (2-4 WITH BASIC STEPS):**
+Provide 2-4 activities written in narrative paragraph form with basic steps
+
+**6. ASSESSMENT RUBRIC:**
+Include this exact table:
+
+| Criteria | Emerging (1) | Developing (2) | Achieving (3) | Exceeding (4) |
+|----------|--------------|----------------|---------------|---------------|
+| **Te Reo Māori** | 0 terms OR incorrect usage | 1-2 terms with errors in macrons | 1-2 terms used correctly with macrons | 3+ terms naturally integrated |
+| **Cultural Understanding** | No cultural context | Basic cultural mention | Clear understanding of 1-2 concepts | Deep cultural analysis |
+| **Critical Thinking** | Single viewpoint | Questions some ideas | Analyzes 2+ perspectives | Sophisticated analysis |
+| **Content Knowledge** | Limited/inaccurate info | Some accurate content | Accurate, relevant content | Comprehensive, well-researched |
+| **Presentation Quality** | Unclear or disorganized | Organized but needs polish | Clear and well-organized | Exceptionally engaging |
+
+**7. RESOURCES (5-8 SPECIFIC):**
+List specific resources with full details
+
+**8. TIME ALLOCATION:**
+Provide realistic time breakdown (60-90 minutes total)
+
+═══════════════════════════════════════════════════════════
+OUTPUT FORMAT - WRITE EXACTLY LIKE THIS:
+═══════════════════════════════════════════════════════════
+
+**IMPROVED LESSON PLAN: {title.upper()}**
+
+**Overview:**
+This improved lesson for {grade_level or 'upper primary'} students integrates at least three Te Reo Māori terms relevant to {title}, such as [write 3 actual terms like "waka, moana, kaitiakitanga" or "maumahara, pakanga, kia kaha"]. The lesson connects students to local places including [write 1-2 actual place names like "Auckland Museum and Ōrākei Marae" or "Te Papa Museum"]. Students will explore different cultural perspectives on {title}, understanding that Māori, Pacific, Pākehā, and other communities may have diverse experiences and viewpoints. They will critically examine whose stories are typically heard and whose voices might be marginalized in dominant narratives about {title}.
+
+**Learning Objectives:**
+By the end of this lesson, students will be able to achieve four key outcomes. First, they will correctly use at least one Te Reo Māori term with accurate macrons (ā, ē, ī, ō, ū) in both spoken and written contexts, demonstrating understanding of its cultural meaning beyond simple translation. Second, they will [write specific topic-related objective, such as "explain the cultural significance of waka for local iwi" or "identify key differences between Te Tiriti and the Treaty"]. Third, they will identify and analyze at least two different cultural or historical perspectives on {title}, recognizing that different communities have different relationships with this topic. Fourth, they will create a project—choosing from visual, oral, or written formats—that demonstrates their cultural understanding, uses Te Reo Māori appropriately, and presents multiple perspectives with respect and depth.
+
+**Cultural Preparation:**
+Before teaching this lesson, teachers should prepare by learning correct pronunciation of key Te Reo Māori terms at https://maoridictionary.co.nz, where audio recordings demonstrate proper vowel sounds and the importance of macrons. Teachers should consult with their school's Māori liaison teacher or cultural advisor to ensure lesson content is culturally appropriate and reflects local tikanga (protocols). If your school does not have a designated liaison, contact your regional Māori education coordinator or local marae for guidance. When opening the lesson, teachers can say: "Kia ora koutou (hello everyone). E mihi ana ki ngā mana whenua o tēnei rohe (We acknowledge the indigenous people of this place)." This simple acknowledgment shows respect for tangata whenua (indigenous people of the land) and sets a culturally respectful tone for learning.
+
+**Lesson Activities:**
+
+**Activity 1: [Write specific activity name relevant to topic] (20 minutes)**
+
+The teacher begins the lesson by greeting students warmly: "Kia ora koutou katoa (hello to you all). Today we are exploring {title}, which in Te Reo Māori we can discuss using the word [write specific term with pronunciation guide, like 'waka (WAH-kah)' or 'maumahara (mow-mah-HAH-rah)']." The teacher writes this term on the board with correct macrons, explaining that macrons (the bar over vowels like ā, ē, ī, ō, ū) are not optional decorations but change the pronunciation and meaning of words. Students practice saying the word together three times, with the teacher gently correcting pronunciation as needed.
+
+Next, the teacher displays [write specific visual aid and its source, such as "photographs of traditional waka from the Auckland Museum's online collection at www.aucklandmuseum.com" or "historical photos from NZ History website at https://nzhistory.govt.nz"]. The teacher gives students two minutes to pair-share, asking: "What do you notice in these images? What questions do you have?" After pair discussions, the teacher invites two or three students to share their partner's observations with the whole class, recording key ideas on chart paper.
+
+The teacher then distributes [write specific handout with exact source]. For waka lessons, print the "Waka Types and Construction" information sheet from Te Ara Encyclopedia at https://teara.govt.nz/en/waka-canoes. For ANZAC lessons, print soldier profile cards from https://nzhistory.govt.nz/war/maori-battalion. For Matariki lessons, print a star chart from Te Papa's educational resources at https://www.tepapa.govt.nz/learn/for-educators/teaching-resources/matariki. For Waitangi lessons, print side-by-side excerpts of Te Tiriti and the English Treaty from https://nzhistory.govt.nz/politics/treaty.
+
+Students work in small groups of three to four for fifteen minutes, discussing three guiding questions that the teacher writes clearly on the board: First, "What Te Reo Māori words appear in these materials, and what do they mean both in English translation and in cultural context?" Second, [write specific topic question like "How did waka design reflect the environment and resources available to different iwi?" or "Why might Māori soldiers have different motivations for service beyond 'duty to King and country'?"]. Third, "Whose perspective are we learning from in this material? Whose voices or stories might not be represented here?"
+
+As groups work, the teacher circulates, listening carefully and asking follow-up questions to deepen thinking: "Can you explain what [specific Te Reo term] means culturally, not just the English translation?" or "What connections do you see between this story and Māori cultural values like mana or whanaungatanga?" After fifteen minutes, each group shares one key insight using this sentence frame written on the board: "We learned that [specific detail from materials]. This connects to the Māori cultural value of [Te Reo concept like mana, kaitiakitanga, or whanaungatanga] because [explanation of connection]." The teacher records these insights on chart paper, organizing them under cultural value headings.
+
+For differentiation, the teacher provides multiple forms of support: Visual learners receive additional diagrams, maps, and photographs alongside text materials. Struggling readers access audio recordings of the handouts using text-to-speech tools or pre-recorded teacher readings. Advanced learners receive extension challenges such as researching additional examples or making connections to contemporary issues. English language learners receive vocabulary cards with the three key Te Reo terms, pictures, and simplified definitions before the lesson begins, allowing them to pre-learn essential vocabulary.
+
+**[Write 1-3 more activities in same flowing narrative style, each 2-3 paragraphs]**
+
+**Activity 2: Critical Discussion About Multiple Perspectives (10-15 minutes)**
+
+The teacher transitions to a critical thinking discussion by posing this question to the class: "We've learned about {title} from certain perspectives today. Whose stories about {title} do we usually hear in schools, museums, and media? Whose voices or experiences might be less visible or harder to find?" The teacher gives students two minutes of silent thinking time, encouraging them to jot down initial ideas. Then students turn to a partner for three minutes of pair-share discussion, building on each other's thoughts.
+
+The teacher facilitates a whole-class discussion, creating two columns on the whiteboard labeled "Voices Often Heard" and "Voices Less Heard." For a waka lesson, students might identify that Pākehā perspectives on maritime history dominate, while different iwi have diverse waka traditions that are often homogenized. For ANZAC lessons, students might note that male Pākehā soldiers' stories are most common, while Māori Battalion soldiers, women nurses, Pacific servicemen, or conscientious objectors receive less attention. For Waitangi lessons, students might recognize that government or Pākehā interpretations of the Treaty dominated for decades, while Māori understandings of Te Tiriti were systematically ignored.
+
+The teacher asks: "Why might different groups of people—Māori versus Pākehā, different iwi like Ngāti Whātua versus Ngāi Tahu, urban versus rural communities, or younger versus older generations—have different feelings, memories, or perspectives about {title}?" Students discuss how historical context, cultural values, personal experiences, and the impacts of colonization shape how different communities relate to this topic. This discussion helps students understand that cultural knowledge is not monolithic and that seeking diverse perspectives enriches our understanding.
+
+**Reflection and Closing (5-10 minutes)**
+
+For the final reflection, students individually complete a brief written or verbal reflection depending on their age and preference. Younger students might turn to a new partner and complete these sentence starters aloud: "One Te Reo Māori word I learned today is [term], which means [translation] and is important because [cultural significance]. One thing I now understand about {title} is [key learning]. One question I still have is [question]." Older students might write a three-to-four sentence reflection in their journals addressing the same prompts.
+
+The teacher closes the lesson with a synthesis statement: "Ka pai, everyone (well done). Today we learned that {title} is more than just [surface level understanding]. We discovered how Te Reo Māori words like [repeat 2-3 terms used] help us understand deeper cultural meanings. We also learned that different people and communities have different stories and perspectives about {title}, and that's okay—in fact, it's important. When we listen to multiple voices and honor diverse experiences, we develop richer, more respectful understanding. Ka kite ānō (until we meet again)."
+
+**Assessment:**
+
+Students will create [write specific project type, such as "a visual poster, oral presentation, or written report"] that demonstrates their understanding of {title}'s cultural significance. The assessment requires students to use at least one Te Reo Māori term correctly with proper macrons, explain its cultural meaning beyond simple translation, present at least two different cultural or historical perspectives on {title}, and communicate their learning clearly through their chosen format. Students may select from multiple presentation options: a visual poster incorporating Māori design elements, an oral presentation to the class, a written essay or report, a digital slideshow, or a creative project like a model or performance. This choice honors different learning styles and strengths while maintaining consistent learning expectations through the rubric.
+
+**Assessment Rubric:**
+
+| Criteria | Emerging (1) | Developing (2) | Achieving (3) | Exceeding (4) |
+|----------|--------------|----------------|---------------|---------------|
+| **Te Reo Māori Integration** | Uses 0 Te Reo terms OR uses terms incorrectly without macrons | Uses 1-2 terms with some errors in macrons or pronunciation | Uses 1-2 Te Reo terms correctly with accurate macrons (ā, ē, ī, ō, ū) | Uses 3+ terms naturally integrated throughout with perfect macrons |
+| **Cultural Understanding** | No cultural context provided OR culturally insensitive | Basic cultural mention without depth | Clear understanding of 1-2 Māori cultural concepts with examples | Deep, nuanced cultural analysis demonstrating mātauranga Māori |
+| **Critical Thinking** | Presents only single viewpoint | Questions some ideas but stays surface-level | Critically analyzes 2+ different perspectives with evidence | Sophisticated analysis of power, colonization, multiple voices |
+| **Content Knowledge** | Limited or inaccurate information | Some accurate content but with gaps | Accurate, relevant, well-organized content | Comprehensive, exceptionally well-researched content |
+| **Presentation Quality** | Unclear, disorganized, hard to follow | Organized but needs more polish or clarity | Clear, well-organized, and effectively presented | Exceptionally clear, engaging, and professionally presented |
+
+Teachers assess each criterion on the 1-4 scale, total the scores (maximum 20 points), and convert to a percentage by dividing by twenty and multiplying by one hundred. Teachers also provide narrative feedback identifying specific strengths and growth areas, such as: "You used the term 'kaitiakitanga' correctly with perfect macrons and explained how it connects to environmental guardianship. To strengthen your work, try adding another perspective, such as how Pacific or Pākehā communities might view this topic differently."
+
+**Resources:**
+
+**Books:**
+1. King, Michael. "The Penguin History of New Zealand." Penguin Books, 2003. ISBN: 978-0143018674. (Comprehensive NZ history with Māori perspectives)
+2. [Add 1-2 topic-specific books with full citations]
+
+**Videos:**
+1. [Write specific video title] - Available at [exact URL like https://teara.govt.nz or https://www.rnz.co.nz]
+2. [Add another relevant video if applicable]
+
+**Websites:**
+1. Māori Dictionary (https://maoridictionary.co.nz) - Essential for Te Reo pronunciation, definitions, and example sentences
+2. Te Ara: The Encyclopedia of New Zealand (https://teara.govt.nz) - Comprehensive, authoritative information on NZ topics including extensive Māori content
+3. NZ History (https://nzhistory.govt.nz) - Government history website with primary sources and educational resources
+4. [Add 1-2 topic-specific websites with exact URLs]
+
+**Community Resources:**
+- Local marae: [Write specific marae name for your region, such as "Ōrākei Marae in Auckland (contact via www.orakeimarae.co.nz)" or "Tuahiwi Marae near Christchurch (Ngāi Tahu)"]
+- Museum education programs: [Write specific program, such as "Auckland Museum's 'Māori Culture Gallery Tours' (www.aucklandmuseum.com/learn)" or "Te Papa's schools programs"]
+
+**Time Allocation:**
+
+This lesson is designed for a sixty-minute class period, though teachers can extend activities for a ninety-minute block if desired. The opening greeting and Te Reo introduction takes five to ten minutes, allowing time for pronunciation practice and cultural acknowledgment. Activity One runs for twenty minutes, including teacher explanation, group work, and sharing. Activity Two's critical discussion takes ten to fifteen minutes for pair-shares and whole-class synthesis. The closing reflection requires five to ten minutes for students to process and articulate their learning. Teachers should build in five to ten minutes of buffer time for transitions, questions, bathroom breaks, or extending discussions if students are deeply engaged. This flexible pacing ensures that all students can meaningfully participate without feeling rushed, while maintaining clear structure and expectations.
+
+**Note to Teachers:**
+
+This lesson plan should be reviewed by your school's Māori liaison teacher or cultural advisor before implementation to ensure cultural appropriateness for your specific school context and community. Teachers retain full responsibility for adapting content to their students' needs and honoring local tikanga (protocols) and iwi perspectives.
+
+═══════════════════════════════════════════════════════════
+SUCCESS CRITERIA - YOUR LESSON MUST MEET THESE:
+═══════════════════════════════════════════════════════════
+
+✅ Written in flowing narrative paragraphs (NOT Python lists or numbered sections)
+✅ 1200-2000 words total
+✅ At least 3 Te Reo Māori terms with correct macrons used naturally throughout
+✅ 1-3 specific local places, resources, or people named (actual names, not placeholders)
+✅ 2-4 activities described in narrative paragraph form with clear steps
+✅ Complete rubric table included
+✅ 5-8 specific resources listed with titles, authors, and URLs
+✅ 1-2 critical thinking questions integrated into activities
+✅ Addresses key gaps from evaluation feedback
+✅ Immediately usable by teachers without further research
+
+**NOW BEGIN WRITING YOUR IMPROVED LESSON PLAN IN FLOWING NARRATIVE PARAGRAPHS:**
+"""

@@ -1,0 +1,585 @@
+{
+  "framework_metadata": {
+    "name": "Culturally Responsive Place-Based Lesson Plan Evaluation Framework",
+    "version": "3.0",
+    "context": "K-12 Education in Aotearoa New Zealand",
+    "created_date": "2025-01-15",
+    "updated_date": "2025-11-21",
+    "author": "Grace (ShuGrace) - UoA Educational Technology PhD",
+    "description": "Comprehensive framework for evaluating lesson plans across four dimensions: place-based learning, integrated cultural responsiveness (including Māori perspectives), critical pedagogy, and lesson design quality",
+    "changelog": {
+      "v1.0": "Initial framework with four separate dimensions (place_based, cultural, maori, critical)",
+      "v2.0": "Attempted to merge cultural and Māori dimensions but retained separate indicator sections",
+      "v3.0": "Complete integration of cultural responsiveness and Māori perspectives into unified indicators; added lesson design quality dimension for holistic evaluation"
+    }
+  },
+
+  "dimensions": {
+    
+    "place_based_learning": {
+      "label": "Place-Based Learning",
+      "code": "PBL",
+      "definition": "Teaching and learning grounded in local environment, community, and culture, connecting students deeply to the places where they live through authentic, real-world experiences",
+      "weight": 0.25,
+      
+      "theoretical_foundation": {
+        "core_literature": [
+          {
+            "citation": "Sobel, D. (2004). Place-based education: Connecting classrooms and communities. Orion Society.",
+            "key_contribution": "Emphasizes using local community and environment as starting point; promotes interdisciplinary learning around local phenomena; cultivates attachment to place and environmental stewardship"
+          },
+          {
+            "citation": "Smith, G. A. (2007). Place-based education: Breaking through the constraining regularities of public school. Environmental Education Research, 13(2), 189-207.",
+            "key_contribution": "Challenges traditional schooling constraints; emphasizes community as classroom; values intergenerational learning and local knowledge transmission"
+          },
+          {
+            "citation": "Gruenewald, D. A. (2003). The best of both worlds: A critical pedagogy of place. Educational Researcher, 32(4), 3-12.",
+            "key_contribution": "Combines critical pedagogy with ecological education; emphasizes decolonization and reinhabitation; questions dominant narratives shaping places"
+          }
+        ]
+      },
+
+      "indicators": [
+        {
+          "code": "PBL-01",
+          "name": "Local Context Integration",
+          "definition": "Uses students' surrounding environments, places, and resources as primary learning content",
+          "weight": 0.20,
+          "assessment_question": "Does the lesson meaningfully reference specific local environments, landmarks, or community resources?",
+          "scoring_guide": {
+            "5": "Deeply embedded in specific local places; names specific locations, landmarks, ecosystems",
+            "4": "Strong local connections with clear geographic specificity",
+            "3": "Some local references but could be more specific or detailed",
+            "2": "Minimal local context; mostly generic or could be anywhere",
+            "1": "No meaningful local connection; entirely generic content"
+          }
+        },
+        {
+          "code": "PBL-02",
+          "name": "Community Engagement & Partnerships",
+          "definition": "Involves authentic collaboration with community members, organizations, or uses community as classroom",
+          "weight": 0.20,
+          "assessment_question": "Does the lesson involve partnerships with local experts, organizations, or community-based learning?",
+          "scoring_guide": {
+            "5": "Substantive community partnerships; co-designed with community; authentic collaboration",
+            "4": "Clear community involvement; local experts or organizations engaged",
+            "3": "Some community connection; limited depth or authenticity",
+            "2": "Minimal community involvement; mostly school-confined",
+            "1": "No community engagement; entirely classroom-based"
+          }
+        },
+        {
+          "code": "PBL-03",
+          "name": "Authentic Real-World Problem Solving",
+          "definition": "Addresses genuine environmental or social issues in the local area with real consequences",
+          "weight": 0.20,
+          "assessment_question": "Are students investigating or addressing actual problems facing their community?",
+          "scoring_guide": {
+            "5": "Addresses real community problems; potential for genuine impact; authentic stakeholders",
+            "4": "Engages with real local issues; meaningful authentic connection",
+            "3": "Some connection to real issues but limited authenticity",
+            "2": "Mostly hypothetical scenarios with minimal real-world relevance",
+            "1": "Entirely hypothetical; no real-world connection or consequences"
+          }
+        },
+        {
+          "code": "PBL-04",
+          "name": "Interdisciplinary Integration",
+          "definition": "Integrates multiple subject areas around place-based phenomena",
+          "weight": 0.15,
+          "assessment_question": "Does the lesson connect multiple disciplines through place-based inquiry?",
+          "scoring_guide": {
+            "5": "Seamless integration of 3+ disciplines around place-based themes",
+            "4": "Clear connections across 2-3 subject areas",
+            "3": "Some interdisciplinary connections; could be strengthened",
+            "2": "Minimal cross-disciplinary integration",
+            "1": "Purely single-discipline; no integration"
+          }
+        },
+        {
+          "code": "PBL-05",
+          "name": "Indigenous & Local Knowledge Systems",
+          "definition": "Respectfully incorporates mātauranga Māori and other indigenous knowledge about place",
+          "weight": 0.15,
+          "assessment_question": "Does the lesson integrate Māori and indigenous perspectives on environment and place?",
+          "scoring_guide": {
+            "5": "Mātauranga Māori central; indigenous knowledge as valid epistemology; deep integration",
+            "4": "Substantive incorporation of Māori environmental knowledge",
+            "3": "Some inclusion of Māori perspectives; could be deeper",
+            "2": "Token reference to Māori knowledge; superficial",
+            "1": "No indigenous knowledge; only Western perspectives"
+          }
+        },
+        {
+          "code": "PBL-06",
+          "name": "Critical Place Consciousness",
+          "definition": "Encourages critical examination of power relations, colonization, and current issues shaping place",
+          "weight": 0.10,
+          "assessment_question": "Does the lesson promote critical analysis of power dynamics and historical forces shaping this place?",
+          "scoring_guide": {
+            "5": "Sophisticated analysis of colonization, power, justice; critical consciousness central",
+            "4": "Clear examination of power dynamics and historical impacts on place",
+            "3": "Some critical elements; limited depth in power analysis",
+            "2": "Minimal critical perspective; avoids power/conflict/injustice",
+            "1": "Uncritical celebratory tone; reinforces dominant narratives"
+          }
+        }
+      ]
+    },
+
+    "cultural_responsiveness_integrated": {
+      "label": "Cultural Responsiveness & Māori Perspectives (Integrated)",
+      "code": "CRMP",
+      "definition": "Holistic pedagogical approach that validates ALL students' cultural backgrounds, centers Māori perspectives as tangata whenua, honors Te Tiriti o Waitangi, integrates mātauranga Māori, and ensures cultural sustaining education",
+      "weight": 0.35,
+      "note": "This dimension fully integrates general cultural responsiveness with Māori-specific indicators. Each indicator addresses both broad cultural diversity AND Māori perspectives as appropriate to Aotearoa NZ's bicultural educational context",
+      
+      "theoretical_foundation": {
+        "core_literature": [
+          {
+            "citation": "Gay, G. (2010); Ladson-Billings, G. (1995); Paris, D. & Alim, H. S. (2017)",
+            "key_contribution": "Culturally responsive and sustaining pedagogies framework"
+          },
+          {
+            "citation": "Bishop, R. & Glynn, T. (1999); Smith, L. T. (2012); Ka Hikitia (2013)",
+            "key_contribution": "Māori education, Te Tiriti obligations, and decolonizing methodologies"
+          }
+        ]
+      },
+
+      "indicators": [
+        {
+          "code": "CRMP-01",
+          "name": "Cultural Knowledge Validation (All Cultures Including Māori)",
+          "definition": "Recognizes students' diverse cultural knowledge—including Māori whakapapa, Pacific heritage, Asian backgrounds—as legitimate academic resources",
+          "weight": 0.12,
+          "assessment_question": "Does the lesson value ALL students' cultural backgrounds (especially Māori) as assets rather than deficits?",
+          "scoring_guide": {
+            "5": "Positions diverse cultural knowledge as central; explicitly values Māori and other cultural ways of knowing; students contribute cultural knowledge",
+            "4": "Clear validation of cultural diversity including Māori; incorporates cultural knowledge",
+            "3": "Acknowledges cultural diversity; some space for cultural knowledge sharing",
+            "2": "Minimal recognition of diversity; Māori and minority cultures marginalized",
+            "1": "Assumes monocultural mainstream; ignores or deficitizes cultural backgrounds"
+          }
+        },
+        {
+          "code": "CRMP-02",
+          "name": "Te Reo Māori Integration",
+          "definition": "Meaningful use of Te Reo Māori throughout lesson as living language, not tokenistic decoration",
+          "weight": 0.10,
+          "assessment_question": "Is Te Reo Māori authentically integrated with correct macron usage and cultural appropriateness?",
+          "scoring_guide": {
+            "5": "Extensive meaningful Te Reo; subject vocabulary in Māori; whakataukī used; bilingual instruction; correct macrons",
+            "4": "Substantial Te Reo beyond basics; content-specific terms; generally correct",
+            "3": "Some Te Reo beyond greetings; attempts correct usage",
+            "2": "Minimal Te Reo (kia ora, ka pai only); may have errors",
+            "1": "No Te Reo OR incorrect/disrespectful usage"
+          }
+        },
+        {
+          "code": "CRMP-03",
+          "name": "Mātauranga Māori & Multicultural Content",
+          "definition": "Curriculum includes mātauranga Māori AND diverse cultural perspectives as valid knowledge systems",
+          "weight": 0.12,
+          "assessment_question": "Does content reflect mātauranga Māori and multicultural perspectives, not just Pākehā/Western views?",
+          "scoring_guide": {
+            "5": "Mātauranga Māori central; rich multicultural content; diverse voices and perspectives; Māori epistemology respected",
+            "4": "Substantial Māori knowledge; clear multicultural representation beyond tokenism",
+            "3": "Some mātauranga Māori and cultural diversity; could be deeper",
+            "2": "Token inclusion; mostly Pākehā/Western content; Māori knowledge peripheral",
+            "1": "Monocultural Eurocentric; no mātauranga Māori; Western knowledge only"
+          }
+        },
+        {
+          "code": "CRMP-04",
+          "name": "Culturally Responsive Pedagogy (Including Māori Approaches)",
+          "definition": "Uses teaching strategies aligned with diverse cultural learning styles including Māori pedagogies (ako, tuakana-teina)",
+          "weight": 0.10,
+          "assessment_question": "Does pedagogy reflect diverse cultural learning preferences including Māori collaborative and oral traditions?",
+          "scoring_guide": {
+            "5": "Multiple modalities; collaborative learning; storytelling; whakapapa; ako; respects Māori and diverse cultural learning styles",
+            "4": "Clear culturally responsive strategies; includes Māori pedagogical approaches",
+            "3": "Some responsive elements; attempts cultural accommodation",
+            "2": "Predominantly mainstream Western pedagogy; minimal cultural responsiveness",
+            "1": "Exclusively individualistic Western methods; culturally unresponsive"
+          }
+        },
+        {
+          "code": "CRMP-05",
+          "name": "Tikanga & Cultural Protocols",
+          "definition": "Demonstrates understanding of tikanga Māori and respects cultural protocols for all represented cultures",
+          "weight": 0.10,
+          "assessment_question": "Does the lesson follow tikanga and embody values like manaakitanga, whanaungatanga, kaitiakitanga?",
+          "scoring_guide": {
+            "5": "Tikanga embedded; appropriate karakia/mihi; respects tapu; embodies Māori values; respects all cultural protocols",
+            "4": "Clear tikanga respect; follows cultural protocols appropriately",
+            "3": "Attempts tikanga with some gaps; generally respectful",
+            "2": "Limited cultural protocol awareness; may inadvertently violate tikanga",
+            "1": "Ignores tikanga; inappropriate use of sacred concepts; culturally insensitive"
+          }
+        },
+        {
+          "code": "CRMP-06",
+          "name": "Māori Worldview & Diverse Cosmologies",
+          "definition": "Represents Māori cosmology authentically while respecting other cultural worldviews",
+          "weight": 0.10,
+          "assessment_question": "Are Māori and other cultural worldviews (whakapapa, mauri, wairua, mana) authentically represented?",
+          "scoring_guide": {
+            "5": "Māori worldview central; explores whakapapa, mauri, wairua; honors diverse cosmologies",
+            "4": "Clear Māori philosophical frameworks; authentic representation of cultural worldviews",
+            "3": "Some Māori concepts; limited depth or context",
+            "2": "Superficial or stereotyped; only Western individualistic worldview dominant",
+            "1": "No Māori worldview; monocultural Western perspective; may misrepresent"
+          }
+        },
+        {
+          "code": "CRMP-07",
+          "name": "Te Tiriti Partnership & Community Collaboration",
+          "definition": "Reflects genuine partnership with Māori community (whānau, hapū, iwi) as Treaty partners",
+          "weight": 0.08,
+          "assessment_question": "Does the lesson involve authentic Māori community partnership and co-design?",
+          "scoring_guide": {
+            "5": "Co-designed with iwi/hapū; substantive whānau involvement; shared decision-making",
+            "4": "Clear Māori community partnership and consultation",
+            "3": "Some Māori community involvement; limited depth",
+            "2": "Token consultation; minimal genuine partnership",
+            "1": "No Māori partnership; developed without consultation"
+          }
+        },
+        {
+          "code": "CRMP-08",
+          "name": "High Expectations with Cultural Scaffolding",
+          "definition": "Maintains rigor while providing culturally appropriate supports for diverse learners including Māori",
+          "weight": 0.10,
+          "assessment_question": "Does the lesson set high standards with scaffolds that respect Māori and diverse cultural ways of learning?",
+          "scoring_guide": {
+            "5": "Rigorous goals; multiple pathways to mastery; whakataukī and cultural metaphors as scaffolds; whānau support",
+            "4": "High expectations with culturally appropriate scaffolding",
+            "3": "Attempts rigor and cultural support; uneven",
+            "2": "Lowers expectations OR rigorous without cultural scaffolding",
+            "1": "Waters down content OR culturally unresponsive; deficit perspectives"
+          }
+        },
+        {
+          "code": "CRMP-09",
+          "name": "Critical Cultural Consciousness & Decolonization",
+          "definition": "Enables analysis of power, colonization's impacts, racism, and cultural privilege",
+          "weight": 0.10,
+          "assessment_question": "Does the lesson develop critical consciousness about colonization, power, and cultural justice?",
+          "scoring_guide": {
+            "5": "Explicitly examines colonization, racism, power; centers Māori sovereignty; affirms tino rangatiratanga; decolonizing",
+            "4": "Clear analysis of cultural power dynamics and colonial impacts",
+            "3": "Some critical elements; limited depth in power/colonization analysis",
+            "2": "Superficial diversity celebration; avoids power/racism/colonization",
+            "1": "Ignores power and colonization; may reinforce colonial narratives and stereotypes"
+          }
+        },
+        {
+          "code": "CRMP-10",
+          "name": "Cultural Sustaining & Te Reo Revitalization",
+          "definition": "Actively sustains Māori language and culture while supporting all heritage languages and cultural practices",
+          "weight": 0.08,
+          "assessment_question": "Does the lesson promote Te Reo revitalization and support students maintaining their cultural identities?",
+          "scoring_guide": {
+            "5": "Actively promotes Te Reo; supports all heritage languages; validates multilingualism; cultural identity development",
+            "4": "Clear support for Te Reo and cultural maintenance",
+            "3": "Some space for cultural expression; limited sustaining",
+            "2": "English-only pressures; requires mainstream conformity; Māori/heritage languages marginalized",
+            "1": "Assimilationist; heritage languages/cultures as obstacles; deficit views"
+          }
+        }
+      ]
+    },
+
+    "critical_pedagogy": {
+      "label": "Critical Pedagogy & Student Engagement",
+      "code": "CP",
+      "definition": "Educational approach that develops critical consciousness, centers student agency, challenges oppression, connects to lived experiences, and promotes social justice action",
+      "weight": 0.25,
+
+      "theoretical_foundation": {
+        "core_literature": [
+          {
+            "citation": "Freire, P. (1970); hooks, b. (1994); Giroux, H. A. (2011)",
+            "key_contribution": "Critical pedagogy as liberation, conscientização, dialogic teaching, and transformative education"
+          }
+        ]
+      },
+
+      "indicators": [
+        {
+          "code": "CP-01",
+          "name": "Power Structure Analysis",
+          "definition": "Explicitly examines how power, privilege, and oppression operate systemically",
+          "weight": 0.15,
+          "assessment_question": "Does the lesson enable students to analyze systems of power and structural oppression?",
+          "scoring_guide": {
+            "5": "Sophisticated systemic power analysis; examines institutional racism, classism, colonialism",
+            "4": "Clear examination of power structures and privilege",
+            "3": "Some power analysis; limited systemic understanding",
+            "2": "Superficial; treats power as individual not structural",
+            "1": "Ignores power; naturalizes inequality; no structural analysis"
+          }
+        },
+        {
+          "code": "CP-02",
+          "name": "Questioning Dominant Narratives",
+          "definition": "Encourages critical interrogation of mainstream narratives and hegemonic ideologies",
+          "weight": 0.12,
+          "assessment_question": "Does the lesson prompt students to question taken-for-granted assumptions?",
+          "scoring_guide": {
+            "5": "Systematically deconstructs dominant narratives; analyzes whose voices centered/marginalized",
+            "4": "Clear critical questioning of mainstream assumptions",
+            "3": "Some questioning; limited critique of dominant narratives",
+            "2": "Mostly accepts mainstream narratives uncritically",
+            "1": "Reinforces dominant ideologies; discourages questioning"
+          }
+        },
+        {
+          "code": "CP-03",
+          "name": "Student Agency & Voice",
+          "definition": "Positions students as knowledge co-constructors with genuine agency and voice",
+          "weight": 0.15,
+          "assessment_question": "Do students have genuine voice, choice, and authority in their learning?",
+          "scoring_guide": {
+            "5": "Students generate questions, share authority, co-create assessment; meaningful choice and agency",
+            "4": "Clear student voice and choice; students contribute to decisions",
+            "3": "Some student input; limited genuine agency",
+            "2": "Minimal student voice; teacher-directed",
+            "1": "Students passive recipients; no voice or agency; compliance-oriented"
+          }
+        },
+        {
+          "code": "CP-04",
+          "name": "Dialogic Teaching & Collaborative Learning",
+          "definition": "Employs dialogue and collaboration as central pedagogical approaches",
+          "weight": 0.12,
+          "assessment_question": "Is teaching dialogic with collaborative learning opportunities?",
+          "scoring_guide": {
+            "5": "Genuine dialogue; collaborative problem-posing; mutual learning; teacher vulnerability",
+            "4": "Clear dialogic approach; substantive collaboration",
+            "3": "Some dialogue and collaboration; uneven implementation",
+            "2": "Mostly teacher-directed; limited genuine dialogue",
+            "1": "Teacher monologue; authoritarian; no collaboration"
+          }
+        },
+        {
+          "code": "CP-05",
+          "name": "Lived Experience Centering",
+          "definition": "Grounds curriculum in students' real lives, communities, and social realities",
+          "weight": 0.13,
+          "assessment_question": "Does the lesson meaningfully connect to students' lived experiences and community issues?",
+          "scoring_guide": {
+            "5": "Curriculum emerges from students' lives; addresses real issues they face; validates experience",
+            "4": "Clear connections to lived experiences and community realities",
+            "3": "Some connection to students' lives; could be stronger",
+            "2": "Disconnected from students' lives; abstract exercises",
+            "1": "Entirely decontextualized; ignores students' realities"
+          }
+        },
+        {
+          "code": "CP-06",
+          "name": "Social Justice Orientation",
+          "definition": "Explicitly focuses on equity, justice, human rights, and challenging oppression",
+          "weight": 0.13,
+          "assessment_question": "Does the lesson have clear social justice aims?",
+          "scoring_guide": {
+            "5": "Explicitly frames learning around justice; examines systemic inequities; explores resistance movements",
+            "4": "Clear social justice focus; addresses equity and rights",
+            "3": "Some justice elements; limited depth",
+            "2": "Mentions justice superficially; avoids structural inequity",
+            "1": "Avoids justice; individualizes social problems; maintains status quo"
+          }
+        },
+        {
+          "code": "CP-07",
+          "name": "Praxis & Action for Change",
+          "definition": "Connects critical reflection to concrete action for social transformation",
+          "weight": 0.12,
+          "assessment_question": "Does the lesson support students taking action to address injustice?",
+          "scoring_guide": {
+            "5": "Action projects addressing real issues; community engagement; solidarity work; theory-practice integration",
+            "4": "Clear action component; students engage with real-world change",
+            "3": "Some action orientation; limited scope or authenticity",
+            "2": "Mostly academic analysis; minimal action component",
+            "1": "Purely academic; discourages activism; separates learning from action"
+          }
+        },
+        {
+          "code": "CP-08",
+          "name": "Critical Reflexivity",
+          "definition": "Cultivates examination of own assumptions, biases, positionality, and complicity",
+          "weight": 0.08,
+          "assessment_question": "Does the lesson promote critical self-reflection on assumptions and privilege?",
+          "scoring_guide": {
+            "5": "Students examine own socialization, privilege, complicity; teacher models vulnerability; ongoing reflexivity",
+            "4": "Clear critical self-reflection component",
+            "3": "Some self-reflection; limited depth",
+            "2": "Minimal self-reflection; critical lens only applied externally",
+            "1": "No reflexivity; unexamined assumptions; teacher as neutral authority"
+          }
+        }
+      ]
+    },
+
+    "lesson_design_quality": {
+      "label": "Lesson Design & Structural Quality",
+      "code": "LDQ",
+      "definition": "Overall quality of lesson plan structure, clarity, coherence, assessment design, and pedagogical soundness",
+      "weight": 0.15,
+      "note": "This dimension evaluates the technical quality and coherence of the lesson plan itself as an instructional document",
+
+      "theoretical_foundation": {
+        "core_literature": [
+          {
+            "citation": "Wiggins, G. & McTighe, J. (2005). Understanding by Design.",
+            "key_contribution": "Backward design, alignment of objectives-instruction-assessment"
+          },
+          {
+            "citation": "Tomlinson, C. A. (2014). Differentiated Classroom.",
+            "key_contribution": "Responsive teaching and differentiation for diverse learners"
+          }
+        ]
+      },
+
+      "indicators": [
+        {
+          "code": "LDQ-01",
+          "name": "Clear Learning Objectives",
+          "definition": "Learning objectives are specific, measurable, appropriate, and clearly stated",
+          "weight": 0.20,
+          "assessment_question": "Are learning objectives clear, specific, and appropriate for the grade level?",
+          "scoring_guide": {
+            "5": "Highly specific, measurable objectives; clear alignment with curriculum; appropriate complexity",
+            "4": "Clear objectives; mostly specific and measurable",
+            "3": "Objectives present but could be more specific or clear",
+            "2": "Vague objectives; unclear expectations",
+            "1": "No clear objectives OR entirely inappropriate for level"
+          }
+        },
+        {
+          "code": "LDQ-02",
+          "name": "Instructional Coherence & Flow",
+          "definition": "Lesson has logical sequence, clear structure, and coherent progression of activities",
+          "weight": 0.18,
+          "assessment_question": "Does the lesson have a logical, coherent structure with clear progression?",
+          "scoring_guide": {
+            "5": "Seamless logical flow; each activity builds on previous; clear beginning-middle-end structure",
+            "4": "Clear coherent structure; activities generally well-sequenced",
+            "3": "Some structure; flow could be improved; minor gaps in logic",
+            "2": "Disjointed; unclear progression; activities disconnected",
+            "1": "No clear structure; chaotic or incoherent"
+          }
+        },
+        {
+          "code": "LDQ-03",
+          "name": "Assessment Alignment & Quality",
+          "definition": "Assessments align with objectives, include formative and summative elements, and provide meaningful feedback mechanisms",
+          "weight": 0.20,
+          "assessment_question": "Are assessments well-designed, aligned with objectives, and include both formative and summative elements?",
+          "scoring_guide": {
+            "5": "Excellent assessment design; clear alignment; multiple methods; rubrics; formative+summative; feedback loops",
+            "4": "Good assessment alignment; includes formative and summative; clear criteria",
+            "3": "Basic assessment present; alignment could be stronger",
+            "2": "Weak assessment; poor alignment; only one type (formative OR summative)",
+            "1": "No assessment OR entirely misaligned with objectives"
+          }
+        },
+        {
+          "code": "LDQ-04",
+          "name": "Differentiation & Scaffolding",
+          "definition": "Lesson includes appropriate scaffolds, differentiation strategies, and support for diverse learners",
+          "weight": 0.15,
+          "assessment_question": "Does the lesson provide appropriate scaffolding and differentiation for diverse learners?",
+          "scoring_guide": {
+            "5": "Sophisticated differentiation; multiple pathways; graduated scaffolds; addresses varied needs",
+            "4": "Clear differentiation strategies; appropriate scaffolding",
+            "3": "Some scaffolding; limited differentiation",
+            "2": "Minimal scaffolding; one-size-fits-all approach",
+            "1": "No scaffolding or differentiation; inappropriate for learners"
+          }
+        },
+        {
+          "code": "LDQ-05",
+          "name": "Resource Quality & Appropriateness",
+          "definition": "Materials, resources, and tools are appropriate, well-selected, and enhance learning",
+          "weight": 0.12,
+          "assessment_question": "Are resources and materials appropriate, high-quality, and well-integrated?",
+          "scoring_guide": {
+            "5": "Excellent resource selection; diverse materials; culturally appropriate; well-integrated",
+            "4": "Good resources; appropriate and supportive of objectives",
+            "3": "Adequate resources; could be higher quality or better integrated",
+            "2": "Poor resource selection; inappropriate or minimal",
+            "1": "No resources specified OR entirely inappropriate"
+          }
+        },
+        {
+          "code": "LDQ-06",
+          "name": "Time Allocation & Pacing",
+          "definition": "Realistic time estimates for activities with appropriate pacing throughout lesson",
+          "weight": 0.10,
+          "assessment_question": "Is time allocation realistic and pacing appropriate for the lesson activities?",
+          "scoring_guide": {
+            "5": "Realistic timing; well-paced; appropriate balance of activities",
+            "4": "Generally realistic timing; mostly appropriate pacing",
+            "3": "Some timing issues; pacing could be improved",
+            "2": "Unrealistic time estimates; poor pacing",
+            "1": "No time considerations OR entirely unrealistic"
+          }
+        },
+        {
+          "code": "LDQ-07",
+          "name": "Clarity & Usability",
+          "definition": "Lesson plan is clearly written, well-organized, and usable by another teacher",
+          "weight": 0.05,
+          "assessment_question": "Is the lesson plan clearly written and usable by another teacher?",
+          "scoring_guide": {
+            "5": "Exceptionally clear; highly detailed; any teacher could implement successfully",
+            "4": "Clear and well-organized; good usability",
+            "3": "Adequate clarity; some gaps in detail",
+            "2": "Unclear or poorly organized; difficult to follow",
+            "1": "Incomprehensible; unusable by others"
+          }
+        }
+      ]
+    }
+  },
+
+  "composite_scoring": {
+    "method": "weighted_average",
+    "weights": {
+      "place_based_learning": 0.25,
+      "cultural_responsiveness_integrated": 0.35,
+      "critical_pedagogy": 0.25,
+      "lesson_design_quality": 0.15
+    },
+    "rationale": "Cultural responsiveness (fully integrated with Māori perspectives) carries highest weight due to Te Tiriti obligations and bicultural commitments. Place-based learning and critical pedagogy equally weighted (25% each) for contextual and transformative education. Lesson design quality (15%) ensures technical instructional soundness.",
+    "interpretation_guide": {
+      "90_100": "Exceptional - Exemplary lesson demonstrating deep integration across all dimensions",
+      "80_89": "Excellent - Strong lesson with clear evidence across most dimensions and indicators",
+      "70_79": "Proficient - Good lesson with solid foundation; some areas for growth",
+      "60_69": "Developing - Adequate lesson with significant room for improvement",
+      "50_59": "Emerging - Basic lesson requiring substantial development",
+      "0_49": "Inadequate - Lesson does not meet framework standards; major revision needed"
+    }
+  },
+
+  "usage_notes": {
+    "intended_users": ["Educational researchers", "Teacher educators", "Curriculum developers", "AI evaluation systems", "Teachers for self-evaluation"],
+    "context_specificity": "Framework designed specifically for Aotearoa New Zealand K-12 context; requires significant adaptation for other settings due to Te Tiriti obligations and bicultural commitments",
+    "evaluation_process": "Each indicator scored 1-5 using specific scoring guides; dimension scores calculated as weighted average of indicators; overall score calculated using dimension weights",
+    "limitations": [
+      "Framework emphasizes specific theoretical traditions; acknowledges other valid pedagogical perspectives exist",
+      "Scoring involves professional judgment and interpretation; inter-rater reliability recommended",
+      "Cultural competence and knowledge of Te Tiriti required for accurate evaluation of cultural responsiveness dimension",
+      "Framework assumes lesson plans contain sufficient detail for meaningful evaluation",
+      "AI evaluation must be validated by human educators with appropriate cultural competence"
+    ],
+    "version_history": {
+      "v1.0": "Initial framework with four separate dimensions (place_based, cultural_responsiveness, maori_perspectives, critical_pedagogy)",
+      "v2.0": "Attempted merging of cultural_responsiveness and maori_perspectives; retained separate indicator sections",
+      "v3.0": "Complete integration: unified cultural responsiveness indicators; added lesson design quality dimension; refined all scoring guides"
+    },
+    "citation": "Shu, G. (2025). Culturally Responsive Place-Based Lesson Plan Evaluation Framework (v3.0). University of Auckland. DOI: [to be assigned]"
+  }
+}

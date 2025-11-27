@@ -1,0 +1,384 @@
+{
+  "system_name": "Multi-Agent Lesson Plan Evaluation System",
+  "version": "3.0",
+  "design_date": "2025-01-19",
+  "updated_date": "2025-11-21",
+  "context": "Aotearoa New Zealand K-12 Education",
+  "changelog": {
+    "v1.0": "Initial system design with four separate dimensions and three agents",
+    "v2.0": "Attempted merging of cultural/Māori dimensions; retained separate indicator sections",
+    "v3.0": "Complete framework redesign: fully integrated cultural responsiveness with 10 unified indicators; added Lesson Design Quality dimension and agent; updated all agent responsibilities and weights"
+  },
+  
+  "agents": {
+    
+    "agent_1": {
+      "name": "DeepSeek",
+      "model": "deepseek-chat",
+      "role": "Place-Based Learning Specialist",
+      "rationale": "Superior contextual reasoning for analyzing local place-based connections, community engagement, authentic problem-solving, and integration of indigenous knowledge in local contexts",
+      "assigned_dimensions": [
+        "place_based_learning"
+      ],
+      "evaluated_indicators": [
+        "PBL-01",
+        "PBL-02",
+        "PBL-03",
+        "PBL-04",
+        "PBL-05",
+        "PBL-06"
+      ],
+      "prompt_file": "prompts/deepseek_place_based.txt",
+      "timeout_seconds": 180,
+      "max_retries": 5,
+      "expected_output_format": "structured_text_with_scores",
+      "status": "optional",
+      "status_note": "May be disabled if API unavailable or budget constraints"
+    },
+    
+    "agent_2": {
+      "name": "Claude",
+      "model": "claude-sonnet-4-20250514",
+      "role": "Integrated Cultural Responsiveness & Māori Perspectives Specialist",
+      "rationale": "Exceptional cultural nuance understanding and sensitivity to indigenous knowledge systems; evaluates fully integrated dimension with 10 unified indicators that seamlessly blend general cultural responsiveness and Māori-specific perspectives",
+      "assigned_dimensions": [
+        "cultural_responsiveness_integrated"
+      ],
+      "dimension_note": "This fully integrated dimension contains 10 unified indicators (CRMP-01 to CRMP-10) that address both general cultural responsiveness AND Māori perspectives simultaneously in each indicator. NO LONGER separated into general/Māori sections.",
+      "evaluated_indicators": [
+        "CRMP-01",
+        "CRMP-02",
+        "CRMP-03",
+        "CRMP-04",
+        "CRMP-05",
+        "CRMP-06",
+        "CRMP-07",
+        "CRMP-08",
+        "CRMP-09",
+        "CRMP-10"
+      ],
+      "prompt_file": "prompts/claude_cultural_integrated.txt",
+      "timeout_seconds": 180,
+      "max_retries": 5,
+      "expected_output_format": "structured_text_with_unified_score",
+      "special_considerations": {
+        "overload_handling": "Use progressive backoff (15s, 30s, 45s, 60s, 75s) for 529 errors",
+        "cultural_sensitivity": "Requires deep cultural competence to evaluate integrated indicators accurately",
+        "te_tiriti_obligations": "Evaluation must honor Te Tiriti principles throughout all indicators",
+        "integration_approach": "Each indicator simultaneously addresses general cultural responsiveness AND Māori perspectives"
+      },
+      "status": "critical",
+      "status_note": "Highest priority agent due to Te Tiriti obligations and highest dimension weight (0.35)"
+    },
+    
+    "agent_3": {
+      "name": "GPT-Critical",
+      "model": "gpt-4o",
+      "role": "Critical Pedagogy & Student Engagement Specialist",
+      "rationale": "Strong analytical capabilities for examining power structures, pedagogical approaches, student agency, dialogic teaching, and social justice orientation",
+      "assigned_dimensions": [
+        "critical_pedagogy"
+      ],
+      "evaluated_indicators": [
+        "CP-01",
+        "CP-02",
+        "CP-03",
+        "CP-04",
+        "CP-05",
+        "CP-06",
+        "CP-07",
+        "CP-08"
+      ],
+      "prompt_file": "prompts/gpt4_critical_pedagogy.txt",
+      "timeout_seconds": 180,
+      "max_retries": 5,
+      "expected_output_format": "structured_text_with_scores",
+      "status": "active"
+    },
+    
+    "agent_4": {
+      "name": "GPT-Design",
+      "model": "gpt-4o",
+      "role": "Lesson Design & Quality Specialist",
+      "rationale": "Strong analytical capabilities for evaluating instructional design quality, structural coherence, assessment alignment, differentiation, and overall lesson plan usability",
+      "assigned_dimensions": [
+        "lesson_design_quality"
+      ],
+      "evaluated_indicators": [
+        "LDQ-01",
+        "LDQ-02",
+        "LDQ-03",
+        "LDQ-04",
+        "LDQ-05",
+        "LDQ-06",
+        "LDQ-07"
+      ],
+      "prompt_file": "prompts/gpt4_lesson_design.txt",
+      "timeout_seconds": 120,
+      "max_retries": 3,
+      "expected_output_format": "structured_text_with_scores",
+      "status": "active",
+      "status_note": "Evaluates technical quality and structural soundness of lesson plan as instructional document"
+    }
+  },
+  
+  "composite_scoring": {
+    "method": "weighted_average",
+    "weights": {
+      "place_based_learning": 0.25,
+      "cultural_responsiveness_integrated": 0.35,
+      "critical_pedagogy": 0.25,
+      "lesson_design_quality": 0.15
+    },
+    "rationale": "Weights reflect v3.0 framework: Integrated cultural responsiveness (0.35) highest due to Te Tiriti obligations and bicultural commitments. Place-based learning (0.25) and critical pedagogy (0.25) equally weighted for contextual and transformative education. Lesson design quality (0.15) ensures technical instructional soundness.",
+    "score_conversion": {
+      "input_scale": "1-5 or 0-100",
+      "output_scale": "0-100",
+      "formula_from_5_point": "(score / 5.0) * 100",
+      "formula_from_100_point": "score (no conversion needed)"
+    },
+    "dynamic_weighting": {
+      "enabled": true,
+      "description": "If certain agents fail, weights are recalculated dynamically across available dimensions",
+      "examples": {
+        "deepseek_unavailable": "cultural=0.41, critical=0.29, design=0.18, lesson_design=0.18",
+        "claude_unavailable": "place=0.38, critical=0.38, design=0.24",
+        "only_claude_available": "cultural=1.0"
+      }
+    }
+  },
+  
+  "evaluation_workflow": {
+    "execution_mode": "parallel_with_fallback",
+    "description": "All four agents evaluate simultaneously; system continues if individual agents fail",
+    "steps": [
+      {
+        "step": 1,
+        "action": "parallel_agent_evaluation",
+        "agents": ["agent_1", "agent_2", "agent_3", "agent_4"],
+        "timeout": 180,
+        "retry_config": {
+          "max_retries": 5,
+          "retry_delay": 15,
+          "progressive_backoff": true,
+          "stop_on_auth_error": true
+        },
+        "fallback_behavior": "continue_with_available_agents"
+      },
+      {
+        "step": 2,
+        "action": "validate_agent_responses",
+        "checks": [
+          "response_not_empty",
+          "score_in_valid_range",
+          "recommendations_present",
+          "strengths_identified",
+          "areas_for_improvement_identified"
+        ]
+      },
+      {
+        "step": 3,
+        "action": "score_aggregation",
+        "method": "apply_dynamic_weights_to_available_dimensions",
+        "normalization": "ensure_weights_sum_to_1.0"
+      },
+      {
+        "step": 4,
+        "action": "recommendation_synthesis",
+        "method": "merge_and_deduplicate_agent_recommendations",
+        "max_recommendations": 12,
+        "prioritization": "by_dimension_weight_and_frequency"
+      },
+      {
+        "step": 5,
+        "action": "generate_improved_lesson",
+        "trigger_condition": "overall_score < 70",
+        "optional": true,
+        "timeout": 180,
+        "use_all_recommendations": true
+      }
+    ]
+  },
+  
+  "output_structure": {
+    "agent_responses": [
+      {
+        "agent": "string (DeepSeek | Claude | GPT-Critical | GPT-Design)",
+        "role": "string",
+        "dimension": "string (singular)",
+        "response": "string (full evaluation text)",
+        "analysis": {
+          "dimension_key": {
+            "score": "integer (0-100)",
+            "response_text": "string",
+            "strengths": ["array"],
+            "areas_for_improvement": ["array"],
+            "gaps": ["array"],
+            "recommendations": ["array"],
+            "cultural_elements_present": ["array (for cultural dimension only)"],
+            "summary": "string"
+          }
+        },
+        "recommendations": ["array of strings"],
+        "score": "integer (0-100)",
+        "time": "float (seconds)"
+      }
+    ],
+    "composite_scores": {
+      "place_based_learning": "integer (0-100)",
+      "cultural_responsiveness_integrated": "integer (0-100)",
+      "critical_pedagogy": "integer (0-100)",
+      "lesson_design_quality": "integer (0-100)",
+      "overall": "integer (0-100)"
+    },
+    "framework_info": {
+      "weights_applied": "object (dimension: weight)",
+      "dimensions_evaluated": ["array"],
+      "framework_version": "string (3.0)",
+      "apis_used": {
+        "deepseek": "boolean",
+        "claude": "boolean",
+        "gpt": "boolean"
+      },
+      "evaluation_notes": "string"
+    },
+    "recommendations": ["array of strings (merged and prioritized)"],
+    "improved_lesson_plan": "string (optional)",
+    "mode": "string (mock | real)"
+  },
+  
+  "quality_assurance": {
+    "minimum_acceptable_scores": {
+      "place_based_learning": 40,
+      "cultural_responsiveness_integrated": 50,
+      "critical_pedagogy": 40,
+      "lesson_design_quality": 40,
+      "overall": 50
+    },
+    "quality_thresholds": {
+      "exceptional": 90,
+      "excellent": 80,
+      "proficient": 70,
+      "developing": 60,
+      "emerging": 50,
+      "inadequate": 0
+    },
+    "red_flags": [
+      "cultural_responsiveness_integrated < 50 (Te Tiriti and equity concern)",
+      "overall < 40 (inadequate lesson quality)",
+      "any_dimension < 30 (serious deficiency)",
+      "lesson_design_quality < 40 (structural problems)"
+    ],
+    "required_human_review": [
+      "Any dimension score < 40",
+      "Cultural responsiveness < 50 (critical for Te Tiriti obligations)",
+      "Overall score < 50",
+      "Agent disagreement > 30 points on same dimension",
+      "Missing critical cultural elements (no Te Reo, no tikanga, no community engagement)",
+      "Lesson design quality issues affecting implementation"
+    ],
+    "ai_limitations_disclosure": [
+      "AI lacks lived cultural and indigenous experience",
+      "MUST consult with local iwi and cultural advisors for Māori content validation",
+      "AI cannot assess cultural appropriateness and tikanga with same depth as human experts",
+      "Recommendations require professional educator judgment and local context adaptation",
+      "Framework is context-specific to Aotearoa New Zealand - not transferable to other settings",
+      "Lesson design evaluation assumes sufficient detail in lesson plan document"
+    ]
+  },
+  
+  "api_configuration": {
+    "api_mode_options": ["mock", "real"],
+    "default_mode": "real",
+    "enable_switches": {
+      "deepseek": "configurable via ENABLE_DEEPSEEK env var",
+      "claude": "configurable via ENABLE_CLAUDE env var",
+      "gpt": "configurable via ENABLE_GPT env var"
+    },
+    "timeout_config": {
+      "default_timeout": 180,
+      "max_retries": 5,
+      "retry_delay": 15,
+      "backoff_multiplier": 1.0
+    },
+    "error_handling": {
+      "on_agent_failure": "continue_with_available_agents",
+      "on_all_agents_fail": "return_error_response",
+      "on_timeout": "retry_with_backoff",
+      "on_auth_error": "stop_retries_immediately"
+    }
+  },
+  
+  "mock_mode_configuration": {
+    "enabled": true,
+    "purpose": "Testing and development without API costs",
+    "mock_scores": {
+      "place_based_learning": 72,
+      "cultural_responsiveness_integrated": 68,
+      "critical_pedagogy": 75,
+      "lesson_design_quality": 78
+    },
+    "mock_includes_all_fields": true,
+    "mock_simulates_timing": true,
+    "mock_provides_detailed_analysis": true
+  },
+  
+  "research_metadata": {
+    "study_phase": "Phase 2 - Mixed Methods Study",
+    "researcher": "Grace (ShuGrace) - UoA Educational Technology PhD",
+    "ethical_approval": "UAHPEC ####",
+    "intended_use": [
+      "Research on AI-assisted lesson plan evaluation",
+      "Teacher professional development and formative feedback",
+      "Curriculum quality assurance",
+      "Supporting culturally responsive pedagogy development",
+      "Promoting Te Tiriti-aligned educational practices"
+    ],
+    "limitations": [
+      "AI systems lack lived cultural and indigenous experience",
+      "Requires human expert validation for Māori content and tikanga accuracy",
+      "Should not replace human professional judgment or cultural advisory",
+      "Context-specific to Aotearoa New Zealand bicultural educational context",
+      "May not capture all nuances of place-based and cultural contexts",
+      "Evaluation quality depends on lesson plan detail and completeness"
+    ],
+    "theoretical_alignment": {
+      "framework_version": "3.0",
+      "key_theories": [
+        "Place-based education (Sobel, 2004; Smith, 2007; Gruenewald, 2003)",
+        "Culturally responsive and sustaining pedagogies (Gay, 2010; Ladson-Billings, 1995; Paris, 2017)",
+        "Māori education and Te Tiriti (Bishop & Glynn, 1999; Smith, 2012; Ka Hikitia, 2013)",
+        "Critical pedagogy (Freire, 1970; hooks, 1994; Giroux, 2011)",
+        "Understanding by Design (Wiggins & McTighe, 2005)"
+      ],
+      "bicultural_commitment": "Framework honors Te Tiriti o Waitangi and centers Māori educational success as Māori",
+      "integration_approach": "Cultural responsiveness and Māori perspectives fully integrated rather than separated"
+    }
+  },
+  
+  "version_history": {
+    "v1.0": {
+      "date": "2025-01-19",
+      "description": "Initial system design with four separate dimensions (place_based, cultural, maori, critical) and three agents"
+    },
+    "v2.0": {
+      "date": "2025-11-20",
+      "description": "Attempted unification of cultural dimensions; retained separate indicator sections within unified dimension",
+      "issues": "Cultural and Māori indicators still separated into sections; incomplete integration"
+    },
+    "v3.0": {
+      "date": "2025-11-21",
+      "description": "Complete framework redesign with fully integrated cultural responsiveness (10 unified indicators); added Lesson Design Quality dimension and fourth agent; refined all weights and evaluation processes",
+      "major_changes": [
+        "Complete integration: 10 unified indicators (CRMP-01 to CRMP-10) that address cultural responsiveness AND Māori perspectives simultaneously",
+        "Added Lesson Design Quality dimension (7 indicators: LDQ-01 to LDQ-07)",
+        "Added fourth agent (Agent 4: Lesson Design Specialist)",
+        "Updated weights: place=0.25, cultural_integrated=0.35, critical=0.25, design=0.15",
+        "Removed all separation between general cultural and Māori sections",
+        "Enhanced quality assurance thresholds",
+        "Improved recommendation synthesis and prioritization",
+        "Refined mock mode with realistic integrated scores"
+      ]
+    }
+  }
+}

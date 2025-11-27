@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, BookOpen, TrendingUp, Users, Globe, FileText, AlertCircle, CheckCircle, Loader, Database, History, Target, Brain, ClipboardCheck, MessageCircle, Upload, FileCheck, X, Download, Sparkles, Lightbulb } from 'lucide-react';
+import { Send, BookOpen, TrendingUp, Users, Globe, FileText, AlertCircle, CheckCircle, Loader, Database, History, Target, Brain, ClipboardCheck, MessageCircle, Upload, FileCheck, X, Download, Sparkles, Lightbulb, FileSpreadsheet } from 'lucide-react';
 import './App.css';
 
 const API_BASE_URL = 'http://localhost:8000';
@@ -46,6 +46,10 @@ const RECOMMENDED_WEBSITES = {
   sustainability: [
     { url: 'https://enviroschools.org.nz', name: 'Enviroschools' },
     { url: 'https://sustainability.tki.org.nz', name: 'Sustainability - TKI' }
+  ],
+  instructional_design: [
+    { url: 'https://www.ascd.org/', name: 'ASCD - Learning & Teaching' },
+    { url: 'https://www.edutopia.org/', name: 'Edutopia - Instructional Design' }
   ]
 };
 
@@ -59,18 +63,15 @@ const getRelevantWebsites = (dimensionKey, subjectArea) => {
       websites.push(...RECOMMENDED_WEBSITES.science);
     }
     websites.push(...RECOMMENDED_WEBSITES.sustainability);
-  } else if (dimensionKey === 'cultural_responsiveness') {
+  } else if (dimensionKey === 'cultural_responsiveness_integrated' || dimensionKey === 'cultural_responsiveness') {
     websites.push(...RECOMMENDED_WEBSITES.maori_language);
     websites.push(...RECOMMENDED_WEBSITES.cultural);
   } else if (dimensionKey === 'critical_pedagogy') {
     websites.push(...RECOMMENDED_WEBSITES.curriculum);
     websites.push(...RECOMMENDED_WEBSITES.professional);
-  } else if (dimensionKey === 'assessment_quality') {
-    websites.push(...RECOMMENDED_WEBSITES.assessment);
+  } else if (dimensionKey === 'lesson_design_quality') {
     websites.push(...RECOMMENDED_WEBSITES.curriculum);
-  } else if (dimensionKey === 'reflective_practice') {
-    websites.push(...RECOMMENDED_WEBSITES.professional);
-    websites.push(...RECOMMENDED_WEBSITES.curriculum);
+    websites.push(...RECOMMENDED_WEBSITES.instructional_design);
   }
   
   // 去重并限制为最多3个
@@ -101,22 +102,20 @@ function App() {
   const [isExtracting, setIsExtracting] = useState(false);
   const fileInputRef = useRef(null);
 
-  // 新增状态 - AI改进教案功能 - ✅ 添加流式文本状态
+  // 新增状态 - AI改进教案功能
   const [isGenerating, setIsGenerating] = useState(false);
   const [improvedLesson, setImprovedLesson] = useState(null);
-  const [streamingText, setStreamingText] = useState(''); // ✅ 新增：流式显示文本
-  const improvedLessonRef = useRef(null); // ✅ 新增：用于自动滚动
+  const [streamingText, setStreamingText] = useState('');
+  const improvedLessonRef = useRef(null);
 
   // 切换输入模式时的处理
   const handleInputModeChange = (mode) => {
     setInputMode(mode);
-    // 清除评估结果和错误
     setEvaluationResult(null);
     setError(null);
     setSaveStatus(null);
     setImprovedLesson(null);
-    setStreamingText(''); // ✅ 清除流式文本
-    // 如果切换到 text 模式，清除文件
+    setStreamingText('');
     if (mode === 'text') {
       setUploadedFile(null);
       setExtractedText('');
@@ -127,7 +126,6 @@ function App() {
     loadSavedEvaluations();
   }, []);
 
-  // ✅ 新增：自动滚动到底部
   useEffect(() => {
     if (improvedLessonRef.current && streamingText) {
       improvedLessonRef.current.scrollTop = improvedLessonRef.current.scrollHeight;
@@ -247,12 +245,11 @@ function App() {
     }
   };
 
-  // ✅ 修改：AI改进教案函数 - 支持流式显示
   const handleGenerateImprovedLesson = async () => {
     setIsGenerating(true);
     setError(null);
-    setStreamingText(''); // ✅ 清空之前的流式文本
-    setImprovedLesson(null); // ✅ 清空完整文本
+    setStreamingText('');
+    setImprovedLesson(null);
     
     try {
       const allRecommendations = [];
@@ -284,7 +281,7 @@ function App() {
           subject_area: subjectArea,
           recommendations: allRecommendations,
           scores: evaluationResult.scores,
-          remove_numbering: true //后端删除序号
+          remove_numbering: true
         }),
       });
       
@@ -292,11 +289,9 @@ function App() {
         throw new Error('Failed to generate improved lesson');
       }
       
-      // ✅ 检查是否支持流式响应
       const contentType = response.headers.get('content-type');
       
       if (response.body && contentType && contentType.includes('text/event-stream')) {
-        // ✅ 流式响应处理
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let fullText = '';
@@ -307,12 +302,11 @@ function App() {
           
           const chunk = decoder.decode(value, { stream: true });
           fullText += chunk;
-          setStreamingText(fullText); // ✅ 更新流式文本
+          setStreamingText(fullText);
         }
         
-        setImprovedLesson(fullText); // ✅ 设置完整文本
+        setImprovedLesson(fullText);
       } else {
-        // ✅ 普通JSON响应处理
         const data = await response.json();
         setImprovedLesson(data.improved_lesson);
         setStreamingText(data.improved_lesson);
@@ -333,13 +327,12 @@ function App() {
       return;
     }
 
-    // 清除之前的所有状态
     setIsEvaluating(true);
     setError(null);
     setEvaluationResult(null);
     setSaveStatus(null);
     setImprovedLesson(null);
-    setStreamingText(''); // ✅ 清除流式文本
+    setStreamingText('');
 
     try {
       console.log('Sending evaluation request...');
@@ -398,18 +391,15 @@ function App() {
     return 'NEEDS WORK';
   };
 
-  // ✅ 处理评分卡片点击跳转（已去除闪烁动画）
   const handleScoreCardClick = (agentKey) => {
     console.log('Clicked score card:', agentKey);
     
     if (agentKey === 'overall') {
-      // Overall Score点击后跳转到Evaluation Results顶部
       const resultsSection = document.querySelector('.results-section');
       if (resultsSection) {
         resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     } else {
-      // 尝试跳转到对应的dimension section
       const dimensionSection = document.querySelector(`[data-dimension-key="${agentKey}"]`);
       console.log('Looking for dimension section with key:', agentKey);
       console.log('Found dimension section:', dimensionSection);
@@ -418,7 +408,6 @@ function App() {
         dimensionSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
       } else {
         console.warn(`Dimension section not found for key: ${agentKey}`);
-        // 显示所有可用的data-dimension-key
         const allSections = document.querySelectorAll('[data-dimension-key]');
         console.log('Available dimension sections:', Array.from(allSections).map(section => section.getAttribute('data-dimension-key')));
       }
@@ -428,6 +417,7 @@ function App() {
   const renderScoreCards = () => {
     if (!evaluationResult || !evaluationResult.scores) return null;
 
+    // ✅ 更新：Framework v3.0 的 4 个维度
     const scoreConfig = [
       {
         key: 'place_based_learning',
@@ -435,8 +425,8 @@ function App() {
         icon: <Globe size={24} />
       },
       {
-        key: 'cultural_responsiveness',
-        label: 'Cultural Responsiveness',
+        key: 'cultural_responsiveness_integrated',  // ✅ 更新
+        label: 'Cultural Responsiveness & Māori Perspectives',
         icon: <Users size={24} />
       },
       {
@@ -445,26 +435,33 @@ function App() {
         icon: <Brain size={24} />
       },
       {
-        key: 'assessment_quality',
-        label: 'Assessment Quality',
-        icon: <ClipboardCheck size={24} />
-      },
-      {
-        key: 'reflective_practice',
-        label: 'Reflective Practice',
-        icon: <MessageCircle size={24} />
+        key: 'lesson_design_quality',  // ✅ 新增
+        label: 'Lesson Design Quality',
+        icon: <FileSpreadsheet size={24} />
       }
     ];
 
+    // ✅ 兼容性处理：同时支持新旧 key
     const validScores = scoreConfig.filter(config => {
-      const score = evaluationResult.scores[config.key];
+      let score = evaluationResult.scores[config.key];
+      
+      // ✅ 兼容旧的 cultural_responsiveness key
+      if (config.key === 'cultural_responsiveness_integrated' && (score === undefined || score === null)) {
+        score = evaluationResult.scores['cultural_responsiveness'];
+      }
+      
       return score !== undefined && score !== null && score > 0;
     });
 
     if (validScores.length === 0) return null;
 
     const scoreCards = validScores.map(config => {
-      const score = evaluationResult.scores[config.key];
+      let score = evaluationResult.scores[config.key];
+      
+      // ✅ 兼容性处理
+      if (config.key === 'cultural_responsiveness_integrated' && (score === undefined || score === null)) {
+        score = evaluationResult.scores['cultural_responsiveness'];
+      }
 
       return (
         <div 
@@ -509,7 +506,7 @@ function App() {
       );
     });
 
-    // ✅ 添加 Overall Score 卡片到最后
+    // ✅ 添加 Overall Score 卡片
     if (evaluationResult.scores?.overall) {
       scoreCards.push(
         <div 
@@ -754,7 +751,6 @@ function App() {
                             e.stopPropagation();
                             clearUploadedFile();
                           }}
-                          
                         >
                           <X size={18} />
                           <span>Remove File</span>
@@ -824,7 +820,6 @@ function App() {
               <div className="results-section">
                 <h2>Evaluation Results</h2>
                 
-                {/* ✅ 所有评分卡片（包括Overall Score）都在这个网格中 */}
                 <div className="scores-grid">
                   {renderScoreCards()}
                 </div>
@@ -836,14 +831,21 @@ function App() {
                     {evaluationResult.agent_responses.map((agent, index) => {
                       console.log(`Agent ${index} (${agent.agent}):`, JSON.stringify(agent, null, 2));
                       
-                      // ✅ 根据agent的role或analysis中的维度来确定对应的key
+                      // ✅ 确定维度 key
                       let agentKey = '';
-                      if (agent.analysis) {
+                      
+                      if (agent.dimension) {
+                        agentKey = agent.dimension;
+                      } else if (agent.dimensions && Array.isArray(agent.dimensions) && agent.dimensions.length > 0) {
+                        agentKey = agent.dimensions[0];
+                      } else if (agent.analysis) {
                         const analysisKeys = Object.keys(agent.analysis);
                         if (analysisKeys.length > 0) {
-                          agentKey = analysisKeys[0]; // 使用第一个analysis key作为标识
+                          agentKey = analysisKeys[0];
                         }
                       }
+                      
+                      console.log(`Agent ${agent.agent} key:`, agentKey);
                       
                       return (
                         <div 
@@ -879,13 +881,53 @@ function App() {
                                   return null;
                                 }
 
+                                //  特殊维度标识
+                                const isCulturalDimension = 
+                                  dimensionKey === 'cultural_responsiveness_integrated' ||
+                                  dimensionKey === 'cultural_responsiveness';
+                                
+                                const isDesignDimension = dimensionKey === 'lesson_design_quality';
+
                                 return (
                                   <div 
                                     key={dimensionKey} 
                                     className="analysis-dimension"
                                     data-dimension-key={dimensionKey}
                                   >
-                                    <h5>{dimensionKey.replace(/_/g, ' ').toUpperCase()}</h5>
+                                    <h5>
+                                      {isCulturalDimension 
+                                        ? 'CULTURAL RESPONSIVENESS & MĀORI PERSPECTIVES (INTEGRATED)' 
+                                        : isDesignDimension
+                                        ? 'LESSON DESIGN QUALITY'
+                                        : dimensionKey.replace(/_/g, ' ').toUpperCase()}
+                                    </h5>
+                                    
+                                    {/* 为统一的文化维度添加说明 */}
+                                    {isCulturalDimension && (
+                                      <p style={{
+                                        fontSize: '0.85rem',
+                                        color: '#64748b',
+                                        marginBottom: '1rem',
+                                        fontStyle: 'italic'
+                                      }}>
+                                        This unified dimension encompasses both general cultural responsiveness 
+                                        and Māori perspectives, reflecting Aotearoa New Zealand's bicultural educational context. 
+                                        (Framework v3.0)
+                                      </p>
+                                    )}
+                                    
+                                    {/* ✅ 为 Lesson Design Quality 添加说明 */}
+                                    {isDesignDimension && (
+                                      <p style={{
+                                        fontSize: '0.85rem',
+                                        color: '#64748b',
+                                        marginBottom: '1rem',
+                                        fontStyle: 'italic'
+                                      }}>
+                                        This dimension evaluates the technical quality and structural soundness 
+                                        of the lesson plan as an instructional document. (Framework v3.0)
+                                      </p>
+                                    )}
                                     
                                     {hasScore && (
                                       <div className="dimension-score-bar">
@@ -902,7 +944,7 @@ function App() {
                                     )}
 
                                     {hasStrengths && (
-                                      <div className="analysis-section">
+                                      <div className="analysis-section strengths-section">
                                         <strong>✅ Strengths:</strong>
                                         <ul>
                                           {dimensionValue.strengths.map((item, i) => (
@@ -913,7 +955,7 @@ function App() {
                                     )}
 
                                     {hasImprovements && (
-                                      <div className="analysis-section">
+                                      <div className="analysis-section areas-section">
                                         <strong>🔧 Areas for Improvement:</strong>
                                         <ul>
                                           {dimensionValue.areas_for_improvement.map((item, i) => (
@@ -950,6 +992,37 @@ function App() {
                                 );
                               })}
                             </div>
+                          ) : agent.response ? (
+                            <div className="agent-response-fallback" style={{
+                              padding: '1rem',
+                              background: '#f8f9fa',
+                              borderRadius: '8px',
+                              marginTop: '1rem'
+                            }}>
+                              <h5 style={{
+                                fontSize: '0.9rem',
+                                fontWeight: 600,
+                                marginBottom: '0.75rem',
+                                color: '#495057'
+                              }}>
+                                📄 Evaluation Response:
+                              </h5>
+                              <pre style={{
+                                whiteSpace: 'pre-wrap',
+                                wordWrap: 'break-word',
+                                fontSize: '0.85rem',
+                                lineHeight: '1.6',
+                                margin: 0,
+                                padding: '1rem',
+                                background: 'white',
+                                border: '1px solid #dee2e6',
+                                borderRadius: '4px',
+                                maxHeight: '400px',
+                                overflowY: 'auto'
+                              }}>
+                                {agent.response}
+                              </pre>
+                            </div>                
                           ) : (
                             <div className="no-analysis">
                               <p>⚠️ No detailed analysis available from this agent.</p>
@@ -961,7 +1034,7 @@ function App() {
 
                           {/* Recommendations */}
                           {agent.recommendations && Array.isArray(agent.recommendations) && agent.recommendations.length > 0 && (
-                            <div className="agent-recommendations">
+                            <div className="analysis-section recommendations-section">
                               <strong>
                                 <Lightbulb size={18} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '0.5rem' }} />
                                 Recommendations ({agent.recommendations.length}):
@@ -979,7 +1052,7 @@ function App() {
                   </div>
                 )}
 
-                {/* ✅ 新增：统一的Recommended Resources section（放在Agent Evaluations之后） */}
+                {/* ✅ Recommended Resources */}
                 {evaluationResult && evaluationResult.agent_responses && evaluationResult.agent_responses.length > 0 && (
                   <div className="unified-resources-section">
                     <h3>📚 Recommended Resources</h3>
@@ -988,7 +1061,6 @@ function App() {
                     </p>
                     <div className="resource-links">
                       {(() => {
-                        // 收集所有agent的维度keys
                         const allDimensionKeys = [];
                         evaluationResult.agent_responses.forEach(agent => {
                           if (agent.analysis) {
@@ -996,13 +1068,11 @@ function App() {
                           }
                         });
                         
-                        // 为每个维度获取推荐网站，然后去重
                         const allWebsites = [];
                         allDimensionKeys.forEach(key => {
                           allWebsites.push(...getRelevantWebsites(key, subjectArea));
                         });
                         
-                        // 去重并限制为最多6个
                         const uniqueWebsites = Array.from(new Map(allWebsites.map(w => [w.url, w])).values());
                         return uniqueWebsites.slice(0, 6).map((website, i) => (
                           <a 
@@ -1046,7 +1116,7 @@ function App() {
                   </div>
                 )}
 
-                {/* ✅ Generate Improved Lesson Button - 移到最后 */}
+                {/* ✅ Generate Improved Lesson Button */}
                 <div className="improve-lesson-actions">
                   <h3>💡 Want an Improved Lesson Plan?</h3>
                   <p className="improve-lesson-description">
@@ -1071,7 +1141,7 @@ function App() {
                   </button>
                 </div>
 
-                {/* ✅ 显示生成的Improved Lesson Plan - 移到Generate按钮之后 */}
+                {/* ✅ Improved Lesson Plan Display */}
                 {(streamingText || improvedLesson) && (
                   <div className="improved-lesson-section">
                     <div className="improved-lesson-header">
@@ -1090,18 +1160,16 @@ function App() {
                                 },
                                 body: JSON.stringify({
                                   content: improvedLesson,
-                                  filename: 'Improved lesson plan.docx'  //统一文件名
+                                  filename: 'Improved_Lesson_Plan.docx'
                                 })
                               });
                               
                               console.log('Response status:', response.status);
-                              console.log('Response headers:', response.headers);
                               
                               if (!response.ok) {
                                 throw new Error(`Server error: ${response.status}`);
                               }
                               
-                              // 直接下载为 Word 文档
                               const blob = await response.blob();
                               console.log('Blob size:', blob.size, 'type:', blob.type);
                               
@@ -1109,26 +1177,24 @@ function App() {
                               const a = document.createElement('a');
                               a.style.display = 'none';
                               a.href = url;
-                              a.download = 'Improved lesson plan.docx'  //统一文件名;
+                              a.download = 'Improved_Lesson_Plan.docx';
                               
                               document.body.appendChild(a);
                               a.click();
                               
-                              // 清理
                               window.URL.revokeObjectURL(url);
                               document.body.removeChild(a);
                               
                               console.log('✅ Download initiated successfully');
                             } catch (err) {
                               console.error('❌ Download error:', err);
-                              // 如果 Word 下载失败，提供txt文本下载作为备选
                               alert(`Word download failed: ${err.message}\nDownloading as text file instead.`);
                               const blob = new Blob([improvedLesson], { type: 'text/plain' });
                               const url = window.URL.createObjectURL(blob);
                               const a = document.createElement('a');
                               a.style.display = 'none';
                               a.href = url;
-                              a.download = 'Improved lesson plan.docx'  //统一文件名;
+                              a.download = 'Improved_Lesson_Plan.txt';
                               document.body.appendChild(a);
                               a.click();
                               window.URL.revokeObjectURL(url);
@@ -1146,7 +1212,6 @@ function App() {
                       ref={improvedLessonRef}
                     >
                       <pre>{streamingText || improvedLesson}</pre>
-                      {/* ✅ 生成中显示加载动画 */}
                       {isGenerating && (
                         <div className="streaming-indicator">
                           <Loader className="spinning" size={16} />
@@ -1164,8 +1229,8 @@ function App() {
 
       <footer className="app-footer">
         <p>
-          Powered by Multi-Agent AI (Claude, DeepSeek, GPT-4) | 
-          New Zealand Education Context | SQLite Database
+          Powered by Multi-Agent AI (DeepSeek, Claude, GPT) | 
+          Framework v3.0 | New Zealand Education Context
         </p>
       </footer>
     </div>
