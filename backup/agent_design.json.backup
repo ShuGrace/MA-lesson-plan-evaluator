@@ -1,0 +1,337 @@
+{
+  "system_name": "Multi-Agent Lesson Plan Evaluation System",
+  "version": "2.0",
+  "design_date": "2025-01-19",
+  "updated_date": "2025-11-20",
+  "context": "Aotearoa New Zealand K-12 Education",
+  "changelog": {
+    "v2.0": "Updated to align with framework v2.0: merged cultural_responsiveness and maori_perspectives into unified dimension; updated weights and agent responsibilities"
+  },
+  
+  "agents": {
+    
+    "agent_1": {
+      "name": "DeepSeek",
+      "model": "deepseek-chat",
+      "role": "Place-based Learning Specialist",
+      "rationale": "Superior contextual reasoning for analyzing local place-based connections, community engagement, and authentic problem-solving in local contexts",
+      "assigned_dimensions": [
+        "place_based_learning"
+      ],
+      "evaluated_indicators": [
+        "PBL_01",
+        "PBL_02",
+        "PBL_03",
+        "PBL_04",
+        "PBL_05",
+        "PBL_06"
+      ],
+      "prompt_file": "prompts/deepseek_place_based.txt",
+      "timeout_seconds": 180,
+      "max_retries": 5,
+      "expected_output_format": "structured_text_with_scores",
+      "status": "optional",
+      "status_note": "May be disabled if API unavailable or budget constraints"
+    },
+    
+    "agent_2": {
+      "name": "Claude",
+      "model": "claude-sonnet-4-20250514",
+      "role": "Cultural Responsiveness & Māori Perspectives Specialist",
+      "rationale": "Excellent cultural nuance understanding and sensitivity to indigenous knowledge systems; evaluates unified dimension encompassing both general cultural responsiveness and Māori-specific perspectives",
+      "assigned_dimensions": [
+        "cultural_responsiveness"
+      ],
+      "dimension_note": "This unified dimension includes both general cultural responsiveness (CR_01-CR_06) and Māori perspectives (MP_01-MP_08)",
+      "evaluated_indicators": [
+        "CR_01",
+        "CR_02",
+        "CR_03",
+        "CR_04",
+        "CR_05",
+        "CR_06",
+        "MP_01",
+        "MP_02",
+        "MP_03",
+        "MP_04",
+        "MP_05",
+        "MP_06",
+        "MP_07",
+        "MP_08"
+      ],
+      "prompt_file": "prompts/claude_cultural_maori.txt",
+      "timeout_seconds": 180,
+      "max_retries": 5,
+      "expected_output_format": "structured_text_with_unified_score",
+      "special_considerations": {
+        "overload_handling": "Use progressive backoff (15s, 30s, 45s, 60s, 75s) for 529 errors",
+        "cultural_sensitivity": "Requires cultural competence to evaluate Māori indicators accurately",
+        "te_tiriti_obligations": "Evaluation must honor Te Tiriti principles of partnership, protection, participation"
+      },
+      "status": "critical",
+      "status_note": "Highest priority agent due to Te Tiriti obligations and highest dimension weight (0.40)"
+    },
+    
+    "agent_3": {
+      "name": "GPT-4",
+      "model": "gpt-4o",
+      "role": "Critical Pedagogy & Student Engagement Specialist",
+      "rationale": "Strong analytical capabilities for examining power structures, pedagogical approaches, and student engagement strategies",
+      "assigned_dimensions": [
+        "critical_pedagogy"
+      ],
+      "evaluated_indicators": [
+        "CP_01",
+        "CP_02",
+        "CP_03",
+        "CP_04",
+        "CP_05",
+        "CP_06",
+        "CP_07",
+        "CP_08"
+      ],
+      "prompt_file": "prompts/gpt4_critical_engagement.txt",
+      "timeout_seconds": 180,
+      "max_retries": 5,
+      "expected_output_format": "structured_text_with_scores",
+      "status": "active"
+    }
+  },
+  
+  "composite_scoring": {
+    "method": "weighted_average",
+    "weights": {
+      "place_based_learning": 0.30,
+      "cultural_responsiveness": 0.40,
+      "critical_pedagogy": 0.30
+    },
+    "rationale": "Weights updated in v2.0 to reflect unified cultural dimension. Cultural responsiveness (including Māori perspectives) carries highest weight (0.40) due to Te Tiriti obligations and bicultural commitments in Aotearoa New Zealand. Place-based learning and critical pedagogy equally important (0.30 each) for contextual and transformative education.",
+    "score_conversion": {
+      "input_scale": "1-5 or 0-100",
+      "output_scale": "0-100",
+      "formula_from_5_point": "(score / 5.0) * 100",
+      "formula_from_100_point": "score (no conversion needed)"
+    },
+    "dynamic_weighting": {
+      "enabled": true,
+      "description": "If certain agents fail, weights are recalculated dynamically across available dimensions",
+      "example": "If DeepSeek unavailable, weights become: cultural_responsiveness=0.57, critical_pedagogy=0.43"
+    }
+  },
+  
+  "evaluation_workflow": {
+    "execution_mode": "parallel_with_fallback",
+    "description": "All agents evaluate simultaneously; system continues if individual agents fail",
+    "steps": [
+      {
+        "step": 1,
+        "action": "parallel_agent_evaluation",
+        "agents": ["agent_1", "agent_2", "agent_3"],
+        "timeout": 180,
+        "retry_config": {
+          "max_retries": 5,
+          "retry_delay": 15,
+          "progressive_backoff": true,
+          "stop_on_auth_error": true
+        },
+        "fallback_behavior": "continue_with_available_agents"
+      },
+      {
+        "step": 2,
+        "action": "validate_agent_responses",
+        "checks": [
+          "response_not_empty",
+          "score_in_valid_range",
+          "recommendations_present"
+        ]
+      },
+      {
+        "step": 3,
+        "action": "score_aggregation",
+        "method": "apply_dynamic_weights_to_available_dimensions",
+        "normalization": "ensure_weights_sum_to_1.0"
+      },
+      {
+        "step": 4,
+        "action": "recommendation_synthesis",
+        "method": "merge_and_deduplicate_agent_recommendations",
+        "max_recommendations": 10
+      },
+      {
+        "step": 5,
+        "action": "generate_improved_lesson",
+        "trigger_condition": "overall_score < 70",
+        "optional": true,
+        "timeout": 180
+      }
+    ]
+  },
+  
+  "output_structure": {
+    "agent_responses": [
+      {
+        "agent": "string (DeepSeek | Claude | GPT-4)",
+        "role": "string",
+        "dimension": "string (singular) or dimensions: array (for backward compatibility)",
+        "response": "string (full evaluation text)",
+        "analysis": {
+          "dimension_key": {
+            "score": "integer (0-100)",
+            "response_text": "string",
+            "strengths": ["array"],
+            "areas_for_improvement": ["array"],
+            "gaps": ["array"],
+            "recommendations": ["array"],
+            "cultural_elements_present": ["array (for cultural dimension)"],
+            "summary": "string"
+          }
+        },
+        "recommendations": ["array of strings"],
+        "score": "integer (0-100)",
+        "time": "float (seconds)"
+      }
+    ],
+    "composite_scores": {
+      "place_based_learning": "integer (0-100)",
+      "cultural_responsiveness": "integer (0-100)",
+      "critical_pedagogy": "integer (0-100)",
+      "assessment_quality": "integer (0-100) - mock only",
+      "reflective_practice": "integer (0-100) - mock only",
+      "overall": "integer (0-100)"
+    },
+    "framework_info": {
+      "weights_applied": "object (dimension: weight)",
+      "dimensions_evaluated": ["array"],
+      "framework_version": "string",
+      "apis_used": {
+        "deepseek": "boolean",
+        "claude": "boolean",
+        "gpt": "boolean"
+      }
+    },
+    "recommendations": ["array of strings"],
+    "improved_lesson_plan": "string (optional)",
+    "mode": "string (mock | real)"
+  },
+  
+  "quality_assurance": {
+    "minimum_acceptable_scores": {
+      "place_based_learning": 40,
+      "cultural_responsiveness": 50,
+      "critical_pedagogy": 40,
+      "overall": 50
+    },
+    "quality_thresholds": {
+      "exceptional": 85,
+      "proficient": 70,
+      "developing": 55,
+      "emerging": 40,
+      "inadequate": 0
+    },
+    "red_flags": [
+      "cultural_responsiveness < 50 (Te Tiriti and equity concern - unified dimension now includes Māori perspectives)",
+      "overall < 40 (inadequate lesson quality)",
+      "any_dimension < 30 (serious deficiency)"
+    ],
+    "required_human_review": [
+      "Any dimension score < 40",
+      "Cultural responsiveness < 50 (includes Māori perspectives)",
+      "Agent disagreement > 30 points on same dimension",
+      "Missing critical indicators (e.g., no Te Reo, no community engagement)"
+    ],
+    "ai_limitations_disclosure": [
+      "AI lacks lived cultural and indigenous experience",
+      "Must consult with local iwi and cultural advisors for Māori content",
+      "AI cannot assess cultural appropriateness with same depth as human experts",
+      "Recommendations require professional educator judgment and adaptation",
+      "Context-specific to Aotearoa New Zealand - may not transfer to other settings"
+    ]
+  },
+  
+  "api_configuration": {
+    "api_mode_options": ["mock", "real"],
+    "default_mode": "real",
+    "enable_switches": {
+      "deepseek": "configurable via ENABLE_DEEPSEEK env var",
+      "claude": "configurable via ENABLE_CLAUDE env var",
+      "gpt": "configurable via ENABLE_GPT env var"
+    },
+    "timeout_config": {
+      "default_timeout": 180,
+      "max_retries": 5,
+      "retry_delay": 15,
+      "backoff_multiplier": 1.0
+    },
+    "error_handling": {
+      "on_agent_failure": "continue_with_available_agents",
+      "on_all_agents_fail": "return_error_response",
+      "on_timeout": "retry_with_backoff",
+      "on_auth_error": "stop_retries_immediately"
+    }
+  },
+  
+  "mock_mode_configuration": {
+    "enabled": true,
+    "purpose": "Testing and development without API costs",
+    "mock_scores": {
+      "place_based_learning": 75,
+      "cultural_responsiveness": 85,
+      "critical_pedagogy": 70,
+      "assessment_quality": 85,
+      "reflective_practice": 78
+    },
+    "mock_includes_all_fields": true,
+    "mock_simulates_timing": true
+  },
+  
+  "research_metadata": {
+    "study_phase": "Phase 2 - Mixed Methods Study",
+    "researcher": "Grace (ShuGrace) - UoA Educational Technology PhD",
+    "ethical_approval": "UAHPEC ####",
+    "intended_use": [
+      "Research on AI-assisted lesson plan evaluation",
+      "Teacher professional development tool",
+      "Curriculum quality assurance",
+      "Supporting culturally responsive pedagogy development"
+    ],
+    "limitations": [
+      "AI systems lack lived cultural and indigenous experience",
+      "Requires human expert validation for Māori content and tikanga",
+      "Should not replace human professional judgment",
+      "Context-specific to Aotearoa New Zealand",
+      "May not capture all nuances of place-based and cultural contexts",
+      "Unified cultural dimension may obscure specific Māori vs. general cultural issues in some cases"
+    ],
+    "theoretical_alignment": {
+      "framework_version": "2.0",
+      "key_theories": [
+        "Place-based education (Sobel, 2004; Smith, 2007; Gruenewald, 2003)",
+        "Culturally responsive teaching (Gay, 2010; Ladson-Billings, 1995; Paris, 2017)",
+        "Māori education and Te Tiriti (Bishop & Glynn, 1999; Smith, 2012; Ka Hikitia, 2013)",
+        "Critical pedagogy (Freire, 1970; hooks, 1994; Giroux, 2011)"
+      ],
+      "bicultural_commitment": "Framework honors Te Tiriti o Waitangi and prioritizes Māori educational success as Māori"
+    }
+  },
+  
+  "version_history": {
+    "v1.0": {
+      "date": "2025-01-19",
+      "description": "Initial system design with four separate dimensions and three agents"
+    },
+    "v2.0": {
+      "date": "2025-11-20",
+      "description": "Unified cultural_responsiveness and maori_perspectives into single dimension; updated weights (0.30, 0.40, 0.30); enhanced error handling and API configuration; added mock mode support; improved quality assurance thresholds",
+      "major_changes": [
+        "Merged maori_perspectives into cultural_responsiveness (now single unified dimension)",
+        "Updated composite scoring weights to reflect new structure",
+        "Agent 2 (Claude) now evaluates unified cultural dimension with 14 indicators",
+        "Added dynamic weight recalculation when agents fail",
+        "Enhanced API configuration with enable/disable switches",
+        "Improved error handling and retry logic",
+        "Added comprehensive mock mode configuration",
+        "Updated quality thresholds to reflect unified dimension"
+      ]
+    }
+  }
+}

@@ -1,0 +1,904 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Send, BookOpen, TrendingUp, Users, Globe, FileText, AlertCircle, CheckCircle, Loader, Database, History, Target, Brain, ClipboardCheck, MessageCircle, Upload, FileCheck, X, Download, Sparkles } from 'lucide-react';
+import './App.css';
+
+
+
+const API_BASE_URL = '';
+
+function App() {
+  // 原有状态
+  const [lessonTitle, setLessonTitle] = useState('');
+  const [lessonContent, setLessonContent] = useState('');
+  const [gradeLevel, setGradeLevel] = useState('');
+  const [subjectArea, setSubjectArea] = useState('');
+  
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [evaluationResult, setEvaluationResult] = useState(null);
+  const [error, setError] = useState(null);
+  const [saveStatus, setSaveStatus] = useState(null);
+  
+  const [savedEvaluations, setSavedEvaluations] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
+
+  // 新增状态 - 文件上传功能
+  const [inputMode, setInputMode] = useState('text'); // 'text' or 'file'
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const [extractedText, setExtractedText] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const fileInputRef = useRef(null);
+
+  // 新增状态 - AI改进教案功能
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [improvedLesson, setImprovedLesson] = useState(null);
+
+  // 切换输入模式时的处理
+  const handleInputModeChange = (mode) => {
+    setInputMode(mode);
+    // 清除评估结果和错误
+    setEvaluationResult(null);
+    setError(null);
+    setSaveStatus(null);
+    setImprovedLesson(null);
+    // 如果切换到 text 模式，清除文件
+    if (mode === 'text') {
+      setUploadedFile(null);
+      setExtractedText('');
+    }
+  };
+
+  useEffect(() => {
+    // 测试后端连接
+    const testBackend = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/`);
+        const data = await response.json();
+        console.log('✅ Backend connected:', data);
+      } catch (err) {
+        console.error('❌ Backend connection failed:', err);
+      }
+    };
+    
+    testBackend();
+    loadSavedEvaluations();
+  }, []);
+
+  const loadSavedEvaluations = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/evaluations?limit=20`);
+      if (response.ok) {
+        const data = await response.json();
+        setSavedEvaluations(data.evaluations || data);
+      }
+    } catch (err) {
+      console.error('Failed to load saved evaluations:', err);
+    }
+  };
+
+  // 文件上传相关函数
+  const handleFileSelect = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      await processFile(file);
+    }
+  };
+
+  const handleFileDrop = async (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      await processFile(file);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const processFile = async (file) => {
+    const validTypes = [
+      'application/pdf', 
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/msword'
+    ];
+    
+    if (!validTypes.includes(file.type)) {
+      setError('Only PDF and Word (.docx, .doc) files are supported');
+      return;
+    }
+    
+    setUploadedFile(file);
+    setError(null); // 清除之前的错误
+    setIsExtracting(true);
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+      console.log('Uploading file:', file.name);
+      
+      const response = await fetch(`${API_BASE_URL}/api/extract-text`, {
+        method: 'POST',
+        body: formData,
+      });
+      
+      console.log('Upload response status:', response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
+        throw new Error(errorData.detail || `Server error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Extracted text length:', data.text?.length);
+      
+      setExtractedText(data.text);
+      setLessonContent(data.text);
+      
+      if (data.metadata?.title) {
+        setLessonTitle(data.metadata.title);
+      }
+      
+      // 成功后确保清除任何错误
+      setError(null);
+      console.log('✅ File processed successfully');
+      
+    } catch (err) {
+      console.error('❌ File processing error:', err);
+      
+      let errorMessage = 'File processing failed';
+      if (err.message.includes('Failed to fetch')) {
+        errorMessage = '❌ Cannot connect to server. Please check backend is running.';
+      } else {
+        errorMessage = `❌ ${err.message}`;
+      }
+      
+      setError(errorMessage);
+      // 失败时清除文件
+      setUploadedFile(null);
+      setExtractedText('');
+      setLessonContent('');
+    } finally {
+      setIsExtracting(false);
+    }
+  };
+
+  const clearUploadedFile = () => {
+    setUploadedFile(null);
+    setExtractedText('');
+    if (inputMode === 'file') {
+      setLessonContent('');
+    }
+  };
+
+  // AI改进教案函数
+  const handleGenerateImprovedLesson = async () => {
+    setIsGenerating(true);
+    setError(null);
+    
+    try {
+      const allRecommendations = [];
+      
+      evaluationResult.agent_responses.forEach(agent => {
+        if (agent.recommendations) {
+          allRecommendations.push(...agent.recommendations);
+        }
+        
+        if (agent.analysis) {
+          Object.values(agent.analysis).forEach(dimension => {
+            if (dimension.gaps) {
+              allRecommendations.push(...dimension.gaps);
+            }
+            if (dimension.areas_for_improvement) {
+              allRecommendations.push(...dimension.areas_for_improvement);
+            }
+          });
+        }
+      });
+      
+      const response = await fetch(`${API_BASE_URL}/api/improve-lesson`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          original_lesson: lessonContent,
+          lesson_title: lessonTitle,
+          grade_level: gradeLevel,
+          subject_area: subjectArea,
+          recommendations: allRecommendations,
+          scores: evaluationResult.scores
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate improved lesson');
+      }
+      
+      const data = await response.json();
+      setImprovedLesson(data.improved_lesson);
+      
+    } catch (err) {
+      setError(`Failed to generate improved lesson plan: ${err.message}`);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleEvaluate = async () => {
+    const contentToEvaluate = lessonContent;
+    
+    if (!lessonTitle.trim() || !contentToEvaluate.trim()) {
+      setError('Please enter both lesson title and content');
+      return;
+    }
+
+    // 清除之前的所有状态
+    setIsEvaluating(true);
+    setError(null);
+    setEvaluationResult(null);
+    setSaveStatus(null);
+    setImprovedLesson(null);
+
+    try {
+      console.log('Sending evaluation request...');
+      console.log('API URL:', `${API_BASE_URL}/api/evaluate/lesson`);
+      
+      const evalResponse = await fetch(`${API_BASE_URL}/api/evaluate/lesson`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lesson_plan_text: contentToEvaluate,
+          lesson_plan_title: lessonTitle,
+          grade_level: gradeLevel,
+          subject_area: subjectArea,
+        }),
+      });
+
+      console.log('Response status:', evalResponse.status);
+
+      if (!evalResponse.ok) {
+        const errorText = await evalResponse.text();
+        console.error('Response error:', errorText);
+        throw new Error(`Evaluation failed (${evalResponse.status}): ${errorText}`);
+      }
+
+      const result = await evalResponse.json();
+      console.log('Evaluation result:', result);
+      setEvaluationResult(result);
+      setSaveStatus({ type: 'success', message: 'Evaluation saved to database!' });
+      loadSavedEvaluations();
+
+    } catch (err) {
+      console.error('Evaluation error:', err);
+      let errorMessage = 'An error occurred during evaluation';
+      
+      if (err.message.includes('Failed to fetch')) {
+        errorMessage = '❌ Cannot connect to server. Please check:\n1. Backend is running on http://localhost:8000\n2. Run: python -m uvicorn main:app --reload';
+      } else {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setIsEvaluating(false);
+    }
+  };
+
+  const getScoreColor = (score) => {
+    if (!score) return '#9ca3af';
+    if (score >= 80) return '#10b981';
+    if (score >= 60) return '#f59e0b';
+    return '#ef4444';
+  };
+
+  const getScoreLabel = (score) => {
+    if (!score) return 'Not Rated';
+    if (score >= 80) return 'Excellent';
+    if (score >= 60) return 'Good';
+    return 'Needs Improvement';
+  };
+
+  // 🔧 修复：创建动态评分卡片的函数
+  const renderScoreCards = () => {
+    if (!evaluationResult || !evaluationResult.scores) return null;
+
+    const scoreConfig = [
+      {
+        key: 'place_based_learning',
+        label: 'Place-Based Learning',
+        icon: <Globe size={24} />
+      },
+      {
+        key: 'cultural_responsiveness',
+        label: 'Cultural Responsiveness',
+        icon: <Users size={24} />
+      },
+      {
+        key: 'critical_pedagogy',
+        label: 'Critical Pedagogy',
+        icon: <Brain size={24} />
+      },
+      {
+        key: 'assessment_quality',
+        label: 'Assessment Quality',
+        icon: <ClipboardCheck size={24} />
+      },
+      {
+        key: 'reflective_practice',
+        label: 'Reflective Practice',
+        icon: <MessageCircle size={24} />
+      }
+    ];
+
+    // 过滤掉没有评分的维度
+    const validScores = scoreConfig.filter(config => {
+      const score = evaluationResult.scores[config.key];
+      return score !== undefined && score !== null && score > 0;
+    });
+
+    // 如果没有有效评分，返回 null
+    if (validScores.length === 0) return null;
+
+    return validScores.map(config => {
+      const score = evaluationResult.scores[config.key];
+
+      return (
+        <div key={config.key} className="score-card">
+          <div className="score-header">
+            {config.icon}
+            <h3>{config.label}</h3>
+          </div>
+          <div className="circular-progress">
+            <svg width="140" height="140">
+              <circle
+                cx="70"
+                cy="70"
+                r="60"
+                fill="none"
+                stroke="#e5e7eb"
+                strokeWidth="12"
+              />
+              <circle
+                cx="70"
+                cy="70"
+                r="60"
+                fill="none"
+                stroke={getScoreColor(score)}
+                strokeWidth="12"
+                strokeDasharray={`${2 * Math.PI * 60}`}
+                strokeDashoffset={`${2 * Math.PI * 60 * (1 - score / 100)}`}
+                strokeLinecap="round"
+                transform="rotate(-90 70 70)"
+              />
+            </svg>
+            <div className="score-value">{score}</div>
+          </div>
+          <div className="score-label" style={{ color: getScoreColor(score) }}>
+            {getScoreLabel(score)}
+          </div>
+        </div>
+      );
+    });
+  };
+
+  return (
+    <div className="app-container">
+      <header className="app-header">
+        <div className="header-content">
+          <div className="logo-section">
+            <BookOpen size={32} />
+            <h1>Lesson Plan Evaluator</h1>
+          </div>
+          <div className="header-actions">
+            <button 
+              className="history-button"
+              onClick={() => setShowHistory(!showHistory)}
+            >
+              <History size={20} />
+              View History ({savedEvaluations.length})
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="main-content">
+        {/* Input Mode Toggle */}
+        <div className="input-mode-toggle">
+          <button 
+            className={inputMode === 'text' ? 'active' : ''}
+            onClick={() => handleInputModeChange('text')}
+          >
+            <FileText size={20} />
+            Text Input
+          </button>
+          <button 
+            className={inputMode === 'file' ? 'active' : ''}
+            onClick={() => handleInputModeChange('file')}
+          >
+            <Upload size={20} />
+            File Upload
+          </button>
+        </div>
+
+        <div className="content-grid">
+          <div className="input-section">
+            <h2>Lesson Plan Input</h2>
+            
+            {inputMode === 'text' ? (
+              <>
+                <div className="form-group">
+                  <label htmlFor="lesson-title">Lesson Title *</label>
+                  <input
+                    id="lesson-title"
+                    type="text"
+                    placeholder="e.g., Water Quality Investigation"
+                    value={lessonTitle}
+                    onChange={(e) => setLessonTitle(e.target.value)}
+                    className="input-field"
+                  />
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="grade-level">Grade Level</label>
+                    <input
+                      id="grade-level"
+                      type="text"
+                      placeholder="e.g., Year 7-8"
+                      value={gradeLevel}
+                      onChange={(e) => setGradeLevel(e.target.value)}
+                      className="input-field"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="subject-area">Subject Area</label>
+                    <input
+                      id="subject-area"
+                      type="text"
+                      placeholder="e.g., Science"
+                      value={subjectArea}
+                      onChange={(e) => setSubjectArea(e.target.value)}
+                      className="input-field"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="lesson-content">Lesson Plan Content *</label>
+                  <textarea
+                    id="lesson-content"
+                    placeholder="Paste your complete lesson plan here..."
+                    value={lessonContent}
+                    onChange={(e) => setLessonContent(e.target.value)}
+                    className="textarea-field"
+                    rows={15}
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="form-group">
+                  <label htmlFor="lesson-title">Lesson Title *</label>
+                  <input
+                    id="lesson-title"
+                    type="text"
+                    placeholder="e.g., Water Quality Investigation"
+                    value={lessonTitle}
+                    onChange={(e) => setLessonTitle(e.target.value)}
+                    className="input-field"
+                  />
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="grade-level">Grade Level</label>
+                    <input
+                      id="grade-level"
+                      type="text"
+                      placeholder="e.g., Year 7-8"
+                      value={gradeLevel}
+                      onChange={(e) => setGradeLevel(e.target.value)}
+                      className="input-field"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="subject-area">Subject Area</label>
+                    <input
+                      id="subject-area"
+                      type="text"
+                      placeholder="e.g., Science"
+                      value={subjectArea}
+                      onChange={(e) => setSubjectArea(e.target.value)}
+                      className="input-field"
+                    />
+                  </div>
+                </div>
+
+                <div 
+                  className={`file-drop-zone ${isDragging ? 'dragging' : ''} ${uploadedFile ? 'has-file' : ''}`}
+                  onDrop={handleFileDrop}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onClick={() => !uploadedFile && fileInputRef.current?.click()}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,.docx,.doc"
+                    onChange={handleFileSelect}
+                    style={{ display: 'none' }}
+                  />
+                  
+                  {isExtracting ? (
+                    <div className="upload-status">
+                      <Loader className="spinning" size={48} />
+                      <p>Extracting text from file...</p>
+                    </div>
+                  ) : uploadedFile ? (
+                    <div className="file-info">
+                      <FileCheck size={48} color="#10b981" />
+                      <p className="filename">{uploadedFile.name}</p>
+                      <p className="file-size">{(uploadedFile.size / 1024).toFixed(1)} KB</p>
+                      <button 
+                        className="remove-file-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          clearUploadedFile();
+                        }}
+                      >
+                        <X size={16} />
+                        Remove File
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <Upload size={48} />
+                      <p>Drag and drop your lesson plan file here</p>
+                      <p className="file-hint">or click to browse</p>
+                      <p className="supported-formats">Supported: PDF, Word (.docx)</p>
+                    </>
+                  )}
+                </div>
+
+                {extractedText && (
+                  <div className="form-group">
+                    <label htmlFor="extracted-content">Extracted Text (Editable) *</label>
+                    <textarea
+                      id="extracted-content"
+                      value={lessonContent}
+                      onChange={(e) => setLessonContent(e.target.value)}
+                      className="textarea-field"
+                      rows={15}
+                      placeholder="Extracted text will appear here..."
+                    />
+                  </div>
+                )}
+              </>
+            )}
+
+            <button
+              onClick={handleEvaluate}
+              disabled={isEvaluating || !lessonTitle.trim() || !lessonContent.trim()}
+              className="evaluate-button"
+            >
+              {isEvaluating ? (
+                <>
+                  <Loader className="spinning" size={20} />
+                  Evaluating...
+                </>
+              ) : (
+                <>
+                  <Send size={20} />
+                  Evaluate Lesson Plan
+                </>
+              )}
+            </button>
+
+            {error && (
+              <div className="error-message">
+                <AlertCircle size={20} />
+                <span>{error}</span>
+              </div>
+            )}
+
+            {saveStatus && saveStatus.type === 'success' && (
+              <div className="success-message">
+                <CheckCircle size={20} />
+                <span>{saveStatus.message}</span>
+              </div>
+            )}
+          </div>
+
+          {/* 🔧 修复：使用动态渲染的评分卡片 */}
+          {evaluationResult && (
+            <div className="results-section">
+              <h2>Evaluation Results</h2>
+              
+              <div className="scores-grid">
+                {renderScoreCards()}
+              </div>
+
+              {evaluationResult.scores?.overall && (
+                <div className="overall-score">
+                  <h3>Overall Score</h3>
+                  <div className="overall-score-value" style={{ color: getScoreColor(evaluationResult.scores.overall) }}>
+                    {evaluationResult.scores.overall}/100
+                  </div>
+                  <div className="overall-label" style={{ color: getScoreColor(evaluationResult.scores.overall) }}>
+                    {getScoreLabel(evaluationResult.scores.overall)}
+                  </div>
+                </div>
+              )}
+
+              {/* Generate Improved Lesson Button */}
+              <div className="improve-lesson-actions">
+                <button
+                  onClick={handleGenerateImprovedLesson}
+                  disabled={isGenerating}
+                  className="generate-improved-button"
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader className="spinning" size={20} />
+                      Generating Improved Lesson Plan...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles size={20} />
+                      Generate Improved Lesson Plan
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* 显示改进后的教案 */}
+              {improvedLesson && (
+                <div className="improved-lesson-section">
+                  <div className="improved-lesson-header">
+                    <h3>✨ Improved Lesson Plan</h3>
+                    <button onClick={async () => {
+                      try {
+                        const response = await fetch(`${API_BASE_URL}/api/convert-to-word`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            content: improvedLesson,
+                            filename: `${lessonTitle || 'lesson'}_improved.docx`
+                          })
+                        });
+                        
+                        if (response.ok) {
+                          const blob = await response.blob();
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `${lessonTitle || 'lesson'}_improved.docx`;
+                          a.click();
+                        } else {
+                          const blob = new Blob([improvedLesson], { type: 'text/plain' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `${lessonTitle || 'lesson'}_improved.txt`;
+                          a.click();
+                        }
+                      } catch (err) {
+                        console.error('Download error:', err);
+                        const blob = new Blob([improvedLesson], { type: 'text/plain' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `${lessonTitle || 'lesson'}_improved.txt`;
+                        a.click();
+                      }
+                    }}>
+                      <Download size={16} />
+                      Download
+                    </button>
+                  </div>
+                  <div className="improved-lesson-content">
+                    <pre>{improvedLesson}</pre>
+                  </div>
+                </div>
+              )}
+
+              {/* 🔧 修复：增强 Agent Evaluations 显示，确保显示详细评论 */}
+              {evaluationResult.agent_responses && evaluationResult.agent_responses.length > 0 && (
+                <div className="agent-evaluations-section">
+                  <h3>🤖 Agent Evaluations</h3>
+                  {evaluationResult.agent_responses.map((agent, index) => {
+                    // 调试：检查数据
+                    console.log(`Agent ${index} (${agent.agent}):`, JSON.stringify(agent, null, 2));
+                    
+                    return (
+                      <div key={index} className="agent-evaluation-card">
+                        <div className="agent-card-header">
+                          <div>
+                            <h4>{agent.agent || 'Unknown Agent'}</h4>
+                            <span className="agent-role">{agent.role || 'No role specified'}</span>
+                            {agent.model && <span className="agent-model">Model: {agent.model}</span>}
+                          </div>
+                        </div>
+
+                        {/* 显示 Analysis */}
+                        {agent.analysis && Object.keys(agent.analysis).length > 0 ? (
+                          <div className="agent-analysis">
+                            {Object.entries(agent.analysis).map(([dimensionKey, dimensionValue]) => {
+                              // 确保 dimensionValue 是对象
+                              if (!dimensionValue || typeof dimensionValue !== 'object') {
+                                console.log(`Skipping ${dimensionKey}: not an object`, dimensionValue);
+                                return null;
+                              }
+
+                              // 检查是否有任何可显示的内容
+                              const hasScore = dimensionValue.score !== undefined && dimensionValue.score !== null;
+                              const hasStrengths = dimensionValue.strengths && dimensionValue.strengths.length > 0;
+                              const hasImprovements = dimensionValue.areas_for_improvement && dimensionValue.areas_for_improvement.length > 0;
+                              const hasGaps = dimensionValue.gaps && dimensionValue.gaps.length > 0;
+                              const hasCulturalElements = dimensionValue.cultural_elements_present && dimensionValue.cultural_elements_present.length > 0;
+
+                              // 如果没有任何内容，跳过
+                              if (!hasScore && !hasStrengths && !hasImprovements && !hasGaps && !hasCulturalElements) {
+                                console.log(`Skipping ${dimensionKey}: no content to display`);
+                                return null;
+                              }
+
+                              return (
+                                <div key={dimensionKey} className="analysis-dimension">
+                                  <h5>{dimensionKey.replace(/_/g, ' ').toUpperCase()}</h5>
+                                  
+                                  {/* 显示分数 */}
+                                  {hasScore && (
+                                    <div className="dimension-score-bar">
+                                      <div 
+                                        className="score-fill"
+                                        style={{ 
+                                          width: `${dimensionValue.score}%`,
+                                          backgroundColor: getScoreColor(dimensionValue.score)
+                                        }}
+                                      >
+                                        <span>{dimensionValue.score}/100</span>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* 显示 Strengths */}
+                                  {hasStrengths && (
+                                    <div className="analysis-section">
+                                      <strong>✅ Strengths:</strong>
+                                      <ul>
+                                        {dimensionValue.strengths.map((item, i) => (
+                                          <li key={i}>{item}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+
+                                  {/* 显示 Areas for Improvement */}
+                                  {hasImprovements && (
+                                    <div className="analysis-section">
+                                      <strong>🔧 Areas for Improvement:</strong>
+                                      <ul>
+                                        {dimensionValue.areas_for_improvement.map((item, i) => (
+                                          <li key={i}>{item}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+
+                                  {/* 显示 Gaps */}
+                                  {hasGaps && (
+                                    <div className="analysis-section warning">
+                                      <strong>💡 Improvement Suggestions:</strong>
+                                      <ul>
+                                        {dimensionValue.gaps.map((item, i) => (
+                                          <li key={i}>
+                                            {item.replace(/⚠️\s*/g, '').replace(/🚩\s*/g, '').replace(/MISSING:\s*/g, '').replace(/CRITICAL:\s*/g, '')}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+
+                                  {/* 显示 Cultural Elements Present */}
+                                  {hasCulturalElements && (
+                                    <div className="analysis-section">
+                                      <strong>🌏 Cultural Elements Present:</strong>
+                                      <ul>
+                                        {dimensionValue.cultural_elements_present.map((item, i) => (
+                                          <li key={i}>{item}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="no-analysis">
+                            <p>⚠️ No detailed analysis available from this agent.</p>
+                            <p style={{fontSize: '0.85rem', marginTop: '0.5rem', color: '#94a3b8'}}>
+                              Data received: {JSON.stringify(agent.analysis || {}).substring(0, 100)}...
+                            </p>
+                          </div>
+                        )}
+
+                        {/* 显示 Recommendations */}
+                        {agent.recommendations && Array.isArray(agent.recommendations) && agent.recommendations.length > 0 && (
+                          <div className="agent-recommendations">
+                            <strong>💡 Recommendations ({agent.recommendations.length}):</strong>
+                            <ul>
+                              {agent.recommendations.map((rec, i) => (
+                                <li key={i}>{rec}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* 显示 Suggested Resources */}
+                        {agent.resources_suggested && Array.isArray(agent.resources_suggested) && agent.resources_suggested.length > 0 && (
+                          <div className="agent-resources">
+                            <strong>📚 Suggested Resources:</strong>
+                            <div className="resource-tags">
+                              {agent.resources_suggested.map((resource, i) => (
+                                <span key={i} className="resource-tag">
+                                  {resource.replace(/_/g, ' ')}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Priority Recommendations */}
+              {evaluationResult.debate_transcript?.consensus?.priority_recommendations && (
+                <div className="priority-recommendations-section">
+                  <h3>⭐ Priority Recommendations</h3>
+                  {evaluationResult.debate_transcript.consensus.priority_recommendations.map((rec, idx) => (
+                    <div 
+                      key={idx} 
+                      className={`recommendation-card priority-${rec.priority.toLowerCase()}`}
+                    >
+                      <div className="recommendation-header">
+                        <span className="priority-badge">{rec.priority}</span>
+                        <h4>{rec.recommendation}</h4>
+                      </div>
+                      <p className="recommendation-rationale">{rec.rationale}</p>
+                      {rec.resource && (
+                        <div className="recommendation-resource">
+                          <BookOpen size={16} />
+                          <span>Resource: {rec.resource.replace(/_/g, ' ')}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </main>
+
+      <footer className="app-footer">
+        <p>
+          Powered by Multi-Agent AI (Claude, DeepSeek, GPT-4) | 
+          New Zealand Education Context | SQLite Database
+        </p>
+      </footer>
+    </div>
+  );
+}
+
+export default App;

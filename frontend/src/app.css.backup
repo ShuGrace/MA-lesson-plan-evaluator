@@ -1,0 +1,2816 @@
+/* Global Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+}
+
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.app-header {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  padding: 2rem 0;
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+}
+
+.header-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  text-align: center;
+}
+
+.header-icon {
+  width: 48px;
+  height: 48px;
+  color: #667eea;
+  margin-bottom: 1rem;
+}
+
+.app-header h1 {
+  font-size: 2.5rem;
+  color: #1a202c;
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+}
+
+.header-subtitle {
+  font-size: 1.1rem;
+  color: #718096;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+/* Stats Bar */
+.stats-bar {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+  margin-top: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #2d3748;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* Main Content - CENTERED */
+.main-content-centered {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 2rem;
+  width: 100%;
+}
+
+.content-wrapper {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* History Toggle */
+.history-toggle {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
+.toggle-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #2d3748;
+  transition: all 0.2s;
+}
+
+.toggle-button:hover {
+  border-color: #667eea;
+  color: #667eea;
+}
+
+.badge {
+  background: #667eea;
+  color: white;
+  padding: 0.125rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  margin-left: 0.5rem;
+}
+
+/* History Sidebar */
+.history-sidebar {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.history-sidebar h3 {
+  font-size: 1.25rem;
+  color: #1a202c;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.no-history {
+  color: #718096;
+  text-align: center;
+  padding: 2rem;
+  font-style: italic;
+}
+
+.history-list {
+  display: grid;
+  gap: 1rem;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.history-item {
+  background: #f7fafc;
+  border-radius: 8px;
+  padding: 1rem;
+  border-left: 4px solid #667eea;
+  transition: all 0.2s;
+}
+
+.history-item:hover {
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.history-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.history-item-header strong {
+  color: #1a202c;
+  font-size: 1rem;
+}
+
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-completed {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.history-item-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.875rem;
+  color: #718096;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.history-item-date {
+  font-size: 0.75rem;
+  color: #a0aec0;
+  margin-bottom: 0.75rem;
+}
+
+.history-item-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-small {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background: #667eea;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #5568d3;
+}
+
+.btn-danger {
+  background: #ef4444;
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #dc2626;
+}
+
+/* Input Section */
+.input-section {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.input-section h2 {
+  font-size: 1.75rem;
+  color: #1a202c;
+  margin-bottom: 1rem; /* 从1.5rem减少到1rem，让标题和tabs更接近 */
+}
+
+/* ===== 优化后的输入模式选项卡 ===== */
+.input-tabs {
+  display: flex;
+  gap: 4px; /* 减小tab之间的间距 */
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.tab-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.2s ease;
+  position: relative;
+  outline: none; /* ✅ 去除focus时的边框 */
+}
+
+.tab-button:hover {
+  color: #667eea;
+  background: #f9fafb;
+}
+
+.tab-button.active {
+  color: #667eea;
+  border-bottom-color: #667eea;
+  background: #f3f4f6; /* ✅ 稍微深一点点的背景色（比hover的#f9fafb稍深） */
+}
+
+.tab-button:focus,
+.tab-button:active {
+  outline: none; /* ✅ 去除点击时的黑色边框 */
+  border-left: none;
+  border-right: none;
+  border-top: none;
+}
+
+.tab-button svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 150px;
+}
+
+/* 文件上传区域 */
+.file-upload-mode {
+  margin-top: 1rem;
+}
+
+.file-drop-zone {
+  border: 3px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 3rem 2rem;
+  text-align: center;
+  background: #f8fafc;
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.file-drop-zone.dragging {
+  border-color: #667eea;
+  background: #f0f4ff;
+  transform: scale(1.02);
+}
+
+.file-drop-zone:hover {
+  border-color: #667eea;
+  background: #fafbff;
+}
+
+.file-drop-zone svg {
+  color: #94a3b8;
+  margin-bottom: 1rem;
+}
+
+.file-drop-zone h3 {
+  font-size: 1.25rem;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+}
+
+.file-drop-zone p {
+  color: #64748b;
+  margin-bottom: 1.5rem;
+}
+
+.file-select-button {
+  padding: 0.75rem 2rem;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.file-select-button:hover {
+  background: #5568d3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* 已上传文件信息 */
+.uploaded-file-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background: #f0fdf4;
+  border: 2px solid #10b981;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.uploaded-file-info strong {
+  font-size: 1rem;
+  color: #065f46;
+}
+
+.uploaded-file-info span {
+  font-size: 0.875rem;
+  color: #059669;
+}
+
+/* 提取文本预览 */
+.extracted-text-preview {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.extracted-text-preview h4 {
+  margin-bottom: 1rem;
+  color: #1e293b;
+  font-size: 1.1rem;
+}
+
+.preview-content {
+  padding: 1rem;
+  background: white;
+  border-radius: 6px;
+  max-height: 300px;
+  overflow-y: auto;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #334155;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Submit Button / Evaluate Button */
+.submit-button,
+.evaluate-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, #667eea 0%, #7c3aed 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.35);
+}
+
+.submit-button:hover:not(:disabled),
+.evaluate-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.45);
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+}
+
+.submit-button:disabled,
+.evaluate-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.submit-button svg,
+.evaluate-button svg {
+  flex-shrink: 0;
+}
+
+/* Loading State */
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Save Status */
+.save-status {
+  margin: 1rem 0;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 600;
+}
+
+.save-status.success {
+  background: #d1fae5;
+  color: #065f46;
+  border: 2px solid #10b981;
+}
+
+.save-status.error {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 2px solid #ef4444;
+}
+
+/* Success Message - 优化样式 */
+.success-message {
+  margin-top: 1rem;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  border: 2px solid #10b981;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 600;
+  color: #065f46;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+  animation: slideIn 0.3s ease-out;
+}
+
+.success-message svg {
+  flex-shrink: 0;
+  color: #10b981;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Results Section */
+.results-section {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.results-section h2 {
+  font-size: 1.75rem;
+  color: #1a202c;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Error Message */
+.error-message {
+  background: #fee2e2;
+  border: 2px solid #ef4444;
+  color: #991b1b;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 600;
+}
+
+/* Dimension Scores Grid */
+.dimension-scores-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.dimension-card {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 1.5rem;
+  border-left: 5px solid #667eea;
+}
+
+.dimension-card h4 {
+  font-size: 1.1rem;
+  color: #1a202c;
+  margin-bottom: 0.5rem;
+  text-transform: capitalize;
+}
+
+.score-display {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.score-number {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #1a202c;
+}
+
+.score-bar {
+  flex: 1;
+  height: 12px;
+  background: #e2e8f0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.score-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.3s ease;
+}
+
+/* Score Colors */
+.score-high {
+  background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.score-medium {
+  background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+
+.score-low {
+  background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+/* Strengths  */
+.strengths-section {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: #e8f5e9;  /* 浅绿色背景 */
+  border-left: 4px solid #4caf50;
+  border-radius: 4px;
+}
+
+.strengths-section strong {
+  color: #2e7d32;
+  display: block;
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.strengths-section ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.strengths-section li {
+  padding: 0.5rem 0;
+  padding-left: 1.5rem;
+  position: relative;
+  line-height: 1.5;
+  color: #1b5e20;
+}
+
+.strengths-section li::before {
+  content: "✅";
+  position: absolute;
+  left: 0;
+  font-size: 1rem;
+}
+
+
+/* ✅ Areas for Improvement 部分样式 */
+.areas-section {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: #fff3e0;  /* 浅橙色背景 */
+  border-left: 4px solid #ff9800;
+  border-radius: 4px;
+}
+
+.areas-section strong {
+  color: #e65100;
+  display: block;
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.areas-section ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.areas-section li {
+  padding: 0.5rem 0;
+  padding-left: 1.5rem;
+  position: relative;
+  line-height: 1.5;
+  color: #bf360c;
+}
+
+.areas-section li::before {
+  content: "🔧";
+  position: absolute;
+  left: 0;
+  font-size: 1rem;
+}
+
+/* Recommendations */
+.recommendations-section {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: #f0f9ff;  /* 浅蓝色背景 */
+  border-left: 4px solid #3b82f6;
+  border-radius: 4px;
+}
+.recommendations-section strong {
+  color: #1565c0;
+  display: block;
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.recommendations-section ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.recommendations-section li {
+  padding: 0.5rem 0;
+  padding-left: 1.5rem;
+  position: relative;
+  line-height: 1.5;
+  color: #0d47a1;
+}
+
+.recommendations-section li::before {
+  content: "💡";
+  position: absolute;
+  left: 0;
+  font-size: 1rem;
+}
+.recommendations-section h3 {
+  font-size: 1.25rem;
+  color: #1a202c;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.recommendations-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.recommendations-list li {
+  padding: 0.75rem 0 0.75rem 2rem;
+  position: relative;
+  line-height: 1.6;
+  color: #4a5568;
+  border-bottom: 1px solid #fde68a;
+}
+
+.recommendations-list li:last-child {
+  border-bottom: none;
+}
+
+.recommendations-list li::before {
+  content: "→";
+  position: absolute;
+  left: 0.5rem;
+  color: #f59e0b;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+/* Agent Evaluations Section */
+.agent-evaluations-section {
+  margin: 3rem 0;
+}
+
+.agent-evaluations-section > h3 {
+  font-size: 1.75rem;
+  color: #1a202c;
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-bottom: 1rem;
+  border-bottom: 3px solid #e2e8f0;
+}
+
+.agent-evaluation-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  border: 2px solid #e2e8f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.agent-evaluation-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  border-color: #cbd5e1;
+}
+
+.agent-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.agent-card-header h4 {
+  font-size: 1.35rem;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+}
+
+.agent-role {
+  display: block;
+  font-size: 0.95rem;
+  color: #64748b;
+  font-weight: 500;
+  font-style: italic;
+}
+
+.agent-analysis {
+  margin-top: 1.5rem;
+}
+
+.analysis-dimension {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid #667eea;
+}
+
+.analysis-dimension h5 {
+  font-size: 1.1rem;
+  color: #1e293b;
+  margin-bottom: 1rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.dimension-score-bar {
+  height: 32px;
+  background: #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.dimension-score-bar .score-fill {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 12px;
+  font-weight: 700;
+  color: white;
+  font-size: 0.9rem;
+  transition: width 0.5s ease;
+}
+
+/* 1. 通用 analysis-section */
+.analysis-section {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-left: 4px solid #dee2e6;
+  border-radius: 4px;
+}
+
+.analysis-section.warning {
+  background-color: #fff3cd;
+  border-left-color: #ffc107;
+}
+
+/* 2. Strengths 专用样式 */
+.strengths-section {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: #e8f5e9;
+  border-left: 4px solid #4caf50;
+  border-radius: 4px;
+}
+
+.analysis-section strong {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #495057;
+}
+
+.analysis-section ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.analysis-section li {
+  padding: 0.5rem 0;
+  padding-left: 1.5rem;
+  position: relative;
+  line-height: 1.5;
+  color: #1b5e20;
+}
+
+.analysis-section li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #6c757d;
+  font-size: 1rem;
+}
+
+.analysis-section.warning li::before {
+  content: "⚠️";
+}
+
+.agent-recommendations {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background: #f0f9ff;
+  border-radius: 12px;
+  border-left: 4px solid #0ea5e9;
+}
+
+.agent-recommendations strong {
+  display: block;
+  margin-bottom: 1rem;
+  color: #0c4a6e;
+  font-size: 1.05rem;
+}
+
+.agent-recommendations ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.agent-recommendations ul li {
+  padding: 0.75rem 0 0.75rem 2rem;
+  position: relative;
+  line-height: 1.6;
+  color: #0c4a6e;
+  border-bottom: 1px solid #bae6fd;
+}
+
+.agent-recommendations ul li:last-child {
+  border-bottom: none;
+}
+
+.agent-recommendations ul li::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #0ea5e9;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.agent-resources {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background: #faf5ff;
+  border-radius: 12px;
+  border-left: 4px solid #a855f7;
+}
+
+.agent-resources strong {
+  display: block;
+  margin-bottom: 1rem;
+  color: #581c87;
+  font-size: 1.05rem;
+}
+
+/* ✅ 新增：网站链接样式 */
+.resource-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.resource-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1.25rem;
+  background: white;
+  border: 2px solid #e9d5ff;
+  border-radius: 8px;
+  color: #581c87;
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.resource-link:hover {
+  background: #e9d5ff;
+  border-color: #a855f7;
+  transform: translateX(5px);
+  box-shadow: 0 2px 8px rgba(168, 85, 247, 0.2);
+}
+
+.resource-link svg {
+  flex-shrink: 0;
+  color: #a855f7;
+}
+
+.resource-link span {
+  flex: 1;
+}
+
+/* 保留旧的resource-tags样式（如果后端仍返回resources_suggested） */
+.resource-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.resource-tag {
+  padding: 0.5rem 1rem;
+  background: #e9d5ff;
+  color: #581c87;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+/* Priority Recommendations Section */
+.priority-recommendations-section {
+  margin: 3rem 0;
+}
+
+.priority-recommendations-section h3 {
+  font-size: 1.75rem;
+  color: #1a202c;
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.recommendation-card {
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  border-left: 5px solid;
+}
+
+.recommendation-card.priority-high {
+  background: #fef2f2;
+  border-color: #ef4444;
+}
+
+.recommendation-card.priority-medium {
+  background: #fff7ed;
+  border-color: #f59e0b;
+}
+
+.recommendation-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.priority-badge {
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.priority-high .priority-badge {
+  background: #ef4444;
+  color: white;
+}
+
+.priority-medium .priority-badge {
+  background: #f59e0b;
+  color: white;
+}
+
+.recommendation-header h4 {
+  font-size: 1.1rem;
+  color: #1a202c;
+  flex: 1;
+}
+
+.recommendation-rationale {
+  color: #4a5568;
+  line-height: 1.6;
+  margin-bottom: 0.75rem;
+}
+
+.recommendation-resource {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #667eea;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+/* Footer */
+.app-footer {
+  background: transparent;
+  padding: 1.5rem 0;
+  text-align: center;
+  margin-top: auto;
+}
+
+.app-footer p {
+  color: white;
+  font-size: 0.9rem;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* 滚动条样式 */
+.preview-content::-webkit-scrollbar,
+.improved-lesson-content::-webkit-scrollbar,
+.history-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.preview-content::-webkit-scrollbar-track,
+.improved-lesson-content::-webkit-scrollbar-track,
+.history-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.preview-content::-webkit-scrollbar-thumb,
+.improved-lesson-content::-webkit-scrollbar-thumb,
+.history-list::-webkit-scrollbar-thumb {
+  background: #667eea;
+  border-radius: 4px;
+}
+
+.preview-content::-webkit-scrollbar-thumb:hover,
+.improved-lesson-content::-webkit-scrollbar-thumb:hover,
+.history-list::-webkit-scrollbar-thumb:hover {
+  background: #5568d3;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .app-header h1 {
+    font-size: 2rem;
+  }
+
+  .main-content-centered {
+    padding: 1rem;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .dimension-scores-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-bar {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .recommendation-header {
+    flex-direction: column;
+  }
+
+  .input-tabs {
+    gap: 0;
+  }
+
+  .tab-button {
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+
+  .file-drop-zone {
+    padding: 2rem 1rem;
+  }
+
+  .uploaded-file-info {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .improvement-action-section {
+    padding: 1.5rem 1rem;
+  }
+
+  .improved-lesson-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .improved-lesson-header button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ===== 移除旧的input-mode-toggle样式，因为现在使用input-tabs ===== */
+
+/* ===== 新增：File Upload 模式的可编辑文本框样式 ===== */
+#extracted-content {
+  border: 2px solid #10b981;
+  background: #f0fdf4;
+}
+
+#extracted-content:focus {
+  border-color: #059669;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.form-group label[for="extracted-content"] {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #059669;
+  font-weight: 700;
+}
+
+.form-group label[for="extracted-content"]::before {
+  content: "✓";
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: #10b981;
+  color: white;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* ===== 新增：Agent 卡片额外样式 ===== */
+.agent-model {
+  display: block;
+  font-size: 0.85rem;
+  color: #94a3b8;
+  font-weight: 500;
+  margin-top: 0.25rem;
+}
+
+.no-analysis {
+  padding: 2rem;
+  text-align: center;
+  color: #94a3b8;
+  font-style: italic;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 2px dashed #e2e8f0;
+}
+
+/* 优化：评分卡片网格布局 - 包含Overall Score */
+.scores-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+@media (max-width: 1200px) {
+  .scores-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .scores-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+.score-card {
+  background: white;
+  border-radius: 16px;
+  padding: 1.75rem 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.score-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
+}
+
+.score-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  text-align: center;
+}
+
+.score-header svg {
+  color: #667eea;
+}
+
+.score-header h3 {
+  font-size: 1rem;
+  color: #1a202c;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.circular-progress {
+  position: relative;
+  margin: 1rem 0;
+}
+
+.score-value {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2rem;
+  font-weight: 800;
+  color: #1a202c;
+}
+
+.score-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-top: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Overall Score 样式 - 优化为与其他评分卡片相同大小 */
+.overall-score {
+  background: linear-gradient(135deg, #f0f4ff 0%, #faf5ff 100%);
+  border-radius: 16px;
+  padding: 1.75rem 1.5rem;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.12);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 2px solid #c7d2fe;
+}
+
+.overall-score:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 28px rgba(102, 126, 234, 0.2);
+  border-color: #a5b4fc;
+}
+
+.overall-score h3 {
+  font-size: 1rem;
+  color: #1a202c;
+  margin-bottom: 1.25rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.overall-score .circular-progress {
+  position: relative;
+  margin: 1rem 0;
+  width: 140px;
+  height: 140px;
+}
+
+.overall-score-value {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2.5rem;
+  font-weight: 900;
+  line-height: 1;
+  color: #1a202c;
+}
+
+.overall-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 0.75rem;
+}
+
+/* Improve Lesson Actions 样式 */
+.improve-lesson-actions {
+  margin: 2rem 0;
+  text-align: center;
+}
+
+.generate-improved-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 2.5rem;
+  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
+}
+
+.generate-improved-button:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.4);
+}
+
+.generate-improved-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+/* ===== 新增样式修复 ===== */
+
+/* ✅ 问题1修复: Overall Score与其他卡片对齐 */
+.overall-score-value {
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  font-size: 2rem !important;
+  font-weight: 800 !important;
+  color: #1a202c !important;
+}
+
+.overall-score .score-value {
+  font-size: 2rem !important;
+}
+
+.overall-score .score-label,
+.overall-label {
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+  margin-top: 0.75rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+/* ✅ 问题2修复: Recommendations图标只在标题显示 */
+.recommendations-icon {
+  display: inline-block !important;
+  vertical-align: middle !important;
+  margin-right: 0.5rem !important;
+}
+
+.recommendations-list-no-icons {
+  list-style: none !important;
+  padding-left: 0 !important;
+  margin: 0 !important;
+}
+
+.recommendations-list-no-icons li {
+  padding: 0.75rem 0 0.75rem 1.5rem !important;
+  position: relative !important;
+  line-height: 1.6 !important;
+  color: #0c4a6e !important;
+  border-bottom: 1px solid #bae6fd !important;
+}
+
+.recommendations-list-no-icons li:last-child {
+  border-bottom: none !important;
+}
+
+.recommendations-list-no-icons li::before {
+  content: "•" !important;
+  position: absolute !important;
+  left: 0.5rem !important;
+  color: #0ea5e9 !important;
+  font-weight: bold !important;
+  font-size: 1.2rem !important;
+}
+
+/* ✅ 问题3修复: 流式文本显示和加载动画 */
+.streaming-indicator {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  padding: 1rem !important;
+  background: #f0f9ff !important;
+  border-radius: 8px !important;
+  margin-top: 1rem !important;
+  color: #0369a1 !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+}
+
+.streaming-indicator .spinning {
+  animation: spin 1s linear infinite !important;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ✅ 问题4修复: 固定页面宽度，防止生成内容后变宽 */
+.improved-lesson-section {
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+
+.improved-lesson-content {
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+  max-height: 600px !important;
+  padding: 1.5rem !important;
+  background: white !important;
+  border: 2px solid #e5e7eb !important;
+  border-radius: 12px !important;
+  font-family: 'Courier New', Courier, monospace !important;
+}
+
+.improved-lesson-content pre {
+  margin: 0 !important;
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  max-width: 100% !important;
+  overflow-wrap: break-word !important;
+}
+
+.results-section {
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+
+.content-wrapper {
+  max-width: 1200px !important;
+  width: 100% !important;
+}
+
+.content-grid {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+
+/* ===== 额外修正：确保圆点样式正确 ===== */
+.agent-recommendations strong {
+  display: flex !important;
+  align-items: center !important;
+  margin-bottom: 1rem !important;
+  color: #0c4a6e !important;
+  font-size: 1.05rem !important;
+}
+
+/* ===== Overall Score 图标样式 ===== */
+.overall-score .score-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  text-align: center;
+}
+
+.overall-score .score-header svg {
+  color: #8b5cf6;
+}
+
+.overall-score .score-header h3 {
+  font-size: 1rem;
+  color: #1a202c;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.3;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ===== Download 按钮样式 ===== */
+.download-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+  outline: none; /* ✅ 去除focus时的边框 */
+}
+
+.download-button:hover {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+}
+
+.download-button:focus,
+.download-button:active {
+  outline: none; /* ✅ 去除点击时的黑色边框 */
+  border: none;
+}
+
+.download-button svg {
+  flex-shrink: 0;
+}
+
+/* ===== Improved Lesson Header 布局优化 ===== */
+.improved-lesson-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 1.5rem !important;
+  padding-bottom: 1rem !important;
+  border-bottom: 2px solid #e5e7eb !important;
+}
+
+.improved-lesson-header h3 {
+  margin: 0 !important;
+  font-size: 1.5rem !important;
+  color: #1a202c !important;
+}
+
+/* ===== 确保 spinning 动画正确应用 ===== */
+.spinning {
+  animation: spin 1s linear infinite !important;
+}
+
+/* 确保Loader图标在Generate按钮中也旋转 */
+.generate-improved-button .spinning,
+.submit-button .spinning {
+  animation: spin 1s linear infinite !important;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ===== 响应式调整 ===== */
+@media (max-width: 768px) {
+  .improved-lesson-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 1rem !important;
+  }
+  
+  .download-button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}
+
+/* ===== 页面居中修复 ===== */
+.main-content-centered {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: flex-start !important;
+  width: 100% !important;
+  padding: 2rem !important;
+}
+
+.content-wrapper {
+  max-width: 1200px !important;
+  width: 100% !important;
+  margin: 0 auto !important;
+}
+
+.content-grid {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 2rem !important;
+  width: 100% !important;
+}
+
+.input-section,
+.results-section {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* ===== Improve Lesson Actions 新样式（移到最后） ===== */
+.improve-lesson-actions {
+  margin: 3rem 0 2rem 0 !important;
+  padding: 2.5rem !important;
+  background: linear-gradient(135deg, #f0f4ff 0%, #faf5ff 100%) !important;
+  border-radius: 16px !important;
+  text-align: center !important;
+  border: 2px solid #c7d2fe !important;
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.15) !important;
+}
+
+.improve-lesson-actions h3 {
+  font-size: 1.75rem !important;
+  color: #1a202c !important;
+  margin-bottom: 1rem !important;
+  font-weight: 700 !important;
+}
+
+.improve-lesson-description {
+  font-size: 1rem !important;
+  color: #64748b !important;
+  margin-bottom: 2rem !important;
+  line-height: 1.6 !important;
+  max-width: 600px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+.generate-improved-button {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.75rem !important;
+  padding: 1rem 2.5rem !important;
+  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 12px !important;
+  font-size: 1.05rem !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3) !important;
+}
+
+.generate-improved-button:hover:not(:disabled) {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.4) !important;
+  background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%) !important;
+}
+
+.generate-improved-button:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+/* ===== 确保整个页面布局居中 ===== */
+.app-container {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 100vh !important;
+  align-items: center !important;
+}
+
+.app-header {
+  width: 100% !important;
+}
+
+main.main-content-centered {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* ===== 修复生成后页面不变宽 ===== */
+.results-section,
+.improved-lesson-section,
+.agent-evaluations-section,
+.priority-recommendations-section {
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+
+.improved-lesson-content {
+  max-width: 100% !important;
+  overflow-x: auto !important;
+}
+
+.improved-lesson-content pre {
+  max-width: 100% !important;
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+}
+
+/* ===== 评分卡片可点击样式 ===== */
+.score-card.clickable,
+.overall-score.clickable {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.score-card.clickable:hover,
+.overall-score.clickable:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.25);
+}
+
+.score-card.clickable:active,
+.overall-score.clickable:active {
+  transform: translateY(-2px);
+}
+/* ===== 统一的Recommended Resources Section ===== */
+.unified-resources-section {
+  margin: 3rem 0;
+  padding: 2rem;
+  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+  border-radius: 16px;
+  border: 2px solid #e9d5ff;
+}
+
+.unified-resources-section h3 {
+  font-size: 1.75rem;
+  color: #581c87;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.unified-resources-section .resources-description {
+  color: #6b21a8;
+  font-size: 1rem;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.unified-resources-section .resource-links {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.unified-resources-section .resource-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: white;
+  border: 2px solid #e9d5ff;
+  border-radius: 10px;
+  color: #581c87;
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.unified-resources-section .resource-link:hover {
+  background: #f3e8ff;
+  border-color: #a855f7;
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.25);
+}
+
+.unified-resources-section .resource-link svg {
+  flex-shrink: 0;
+  color: #a855f7;
+}
+
+.unified-resources-section .resource-link span {
+  flex: 1;
+}
+
+
+/* ===== 🔧 核心修复：防止生成内容后页面变宽 ===== */
+/* ===== 🔧 核心修复：防止生成内容后页面变宽 ===== */
+/* ===== 🔧 精准修复：防止页面宽度变化 ===== */
+
+/* 1. 强制 body 和 html 不允许横向溢出 */
+html {
+  overflow-x: hidden;
+  width: 100%;
+}
+
+body {
+  overflow-x: hidden;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* 2. App 容器固定 */
+.app-container {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+/* 3. 主内容区域严格控制 */
+.main-content-centered {
+  width: 100%;
+  max-width: 100vw;
+  padding: 2rem;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+/* 4. 内容包装器 - 这是关键！ */
+.content-wrapper {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* 5. 所有主要内容区块 */
+.input-section,
+.results-section,
+.history-sidebar {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* 6. Results Section 特殊处理 */
+.results-section {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.results-section > * {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* 7. 评分卡片网格 - 防止溢出 */
+.scores-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin: 2rem 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.score-card,
+.overall-score {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0; /* 重要：允许 flex/grid 子项收缩 */
+}
+
+/* 8. Agent Evaluations Section */
+.agent-evaluations-section {
+  width: 100%;
+  max-width: 100%;
+  margin: 3rem 0;
+  box-sizing: border-box;
+}
+
+.agent-evaluation-card {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.agent-evaluation-card * {
+  max-width: 100%;
+  box-sizing: border-box;
+  word-wrap: break-word;
+}
+
+/* 9. Dimension Scores Grid */
+.dimension-scores-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+.dimension-card {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+/* 10. Recommendations Section */
+.recommendations-section,
+.priority-recommendations-section {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* 11. Improve Lesson Actions */
+.improve-lesson-actions {
+  width: 100%;
+  max-width: 100%;
+  margin: 3rem 0 2rem 0;
+  padding: 2.5rem;
+  box-sizing: border-box;
+}
+
+/* 12. 🔥 核心修复：Improved Lesson Section */
+.improved-lesson-section {
+  width: 100%;
+  max-width: 100%;
+  margin-top: 2rem;
+  padding: 2rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* 13. Improved Lesson Header */
+.improved-lesson-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e5e7eb;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.improved-lesson-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #1a202c;
+  flex: 1;
+  min-width: 0; /* 允许收缩 */
+}
+
+/* 14. 🎯 最关键：Improved Lesson Content */
+.improved-lesson-content {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 1.5rem;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #1e293b;
+  
+  /* 关键：处理溢出 */
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 600px;
+  
+  /* 关键：文本换行 */
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+/* 15. Improved Lesson Content 内的所有元素 */
+.improved-lesson-content * {
+  max-width: 100%;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  box-sizing: border-box;
+}
+
+.improved-lesson-content pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+  font-family: inherit;
+}
+
+.improved-lesson-content p,
+.improved-lesson-content div,
+.improved-lesson-content span {
+  max-width: 100%;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+/* 16. 表格处理 */
+.improved-lesson-content table {
+  width: 100%;
+  max-width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.improved-lesson-content td,
+.improved-lesson-content th {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  padding: 0.5rem;
+}
+
+/* 17. 链接和代码处理 */
+.improved-lesson-content a {
+  word-break: break-all;
+  overflow-wrap: break-word;
+}
+
+.improved-lesson-content code {
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* 18. 滚动条美化 */
+.improved-lesson-content::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.improved-lesson-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.improved-lesson-content::-webkit-scrollbar-thumb {
+  background: #8b5cf6;
+  border-radius: 4px;
+}
+
+.improved-lesson-content::-webkit-scrollbar-thumb:hover {
+  background: #7c3aed;
+}
+
+/* 19. Analysis Section 文本内容 */
+.analysis-section ul li {
+  max-width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* 20. Agent Recommendations */
+.agent-recommendations ul li {
+  max-width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* 21. 响应式调整 */
+@media (max-width: 1200px) {
+  .scores-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .main-content-centered {
+    padding: 1rem;
+  }
+  
+  .content-wrapper {
+    padding: 0;
+  }
+  
+  .scores-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .improved-lesson-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .download-button {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .improved-lesson-content {
+    padding: 1rem;
+    font-size: 0.85rem;
+  }
+}
+
+/* 22. 确保 Grid 子元素不溢出 */
+.dimension-scores-grid > *,
+.scores-grid > * {
+  min-width: 0; /* 关键：允许 grid 子项收缩到比内容更小 */
+  overflow: hidden;
+}
+
+/* 23. 文本内容通用规则 */
+.results-section p,
+.results-section li,
+.results-section span,
+.results-section div {
+  max-width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* 24. 防止长文本撑开容器 */
+.agent-card-header h4,
+.agent-role,
+.dimension-card h4 {
+  max-width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* 25. 确保所有卡片类组件不溢出 */
+[class*="card"],
+[class*="section"] {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* 26. Header 固定 */
+.app-header {
+  width: 100%;
+  max-width: 100vw;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.header-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  box-sizing: border-box;
+}
+
+/* 27. Footer 固定 */
+.app-footer {
+  width: 100%;
+  max-width: 100vw;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+/* 28. 特殊情况：Streaming Indicator */
+.streaming-indicator {
+  max-width: 100%;
+  box-sizing: border-box;
+  word-wrap: break-word;
+}
+
+/* 29. 防止按钮撑开容器 */
+.submit-button,
+.evaluate-button,
+.generate-improved-button {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* 30. 确保表单元素不溢出 */
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+
+
+
+
+
+/* ===== 🔧 精准修复：防止页面宽度变化 ===== */
+
+/* 1. 强制 body 和 html 不允许横向溢出 */
+html {
+  overflow-x: hidden;
+  width: 100%;
+}
+
+body {
+  overflow-x: hidden;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* 2. App 容器固定 */
+.app-container {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+/* 3. 主内容区域严格控制 */
+.main-content-centered {
+  width: 100%;
+  max-width: 100vw;
+  padding: 2rem;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+/* 4. 内容包装器 - 这是关键！ */
+.content-wrapper {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* 5. 所有主要内容区块 */
+.input-section,
+.results-section,
+.history-sidebar {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* 6. Results Section 特殊处理 */
+.results-section {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.results-section > * {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* 7. 评分卡片网格 - 防止溢出 */
+.scores-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin: 2rem 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.score-card,
+.overall-score {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0; /* 重要：允许 flex/grid 子项收缩 */
+}
+
+/* 8. Agent Evaluations Section */
+.agent-evaluations-section {
+  width: 100%;
+  max-width: 100%;
+  margin: 3rem 0;
+  box-sizing: border-box;
+}
+
+.agent-evaluation-card {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.agent-evaluation-card * {
+  max-width: 100%;
+  box-sizing: border-box;
+  word-wrap: break-word;
+}
+
+/* 9. Dimension Scores Grid */
+.dimension-scores-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+.dimension-card {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+/* 10. Recommendations Section */
+.recommendations-section,
+.priority-recommendations-section {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* 11. Improve Lesson Actions */
+.improve-lesson-actions {
+  width: 100%;
+  max-width: 100%;
+  margin: 3rem 0 2rem 0;
+  padding: 2.5rem;
+  box-sizing: border-box;
+}
+
+/* 12. 🔥 核心修复：Improved Lesson Section - 最严格的控制 */
+.improved-lesson-section {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-top: 2rem !important;
+  padding: 2rem !important;
+  background: white !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  
+  /* 🔥 额外保护：防止任何子元素撑开 */
+  contain: layout !important;
+}
+
+/* 🔥 新增：强制 Improved Lesson Section 内所有内容不超出 */
+.improved-lesson-section > * {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* 13. Improved Lesson Header */
+.improved-lesson-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e5e7eb;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.improved-lesson-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #1a202c;
+  flex: 1;
+  min-width: 0; /* 允许收缩 */
+}
+
+/* 14. 🎯 最关键：Improved Lesson Content */
+.improved-lesson-content {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 1.5rem !important;
+  background: white !important;
+  border: 2px solid #e5e7eb !important;
+  border-radius: 12px !important;
+  font-family: 'Courier New', Courier, monospace !important;
+  font-size: 0.9rem !important;
+  line-height: 1.6 !important;
+  color: #1e293b !important;
+  
+  /* 🔥 关键：强制处理溢出 */
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+  max-height: 600px !important;
+  
+  /* 🔥 关键：强制文本换行 */
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+  
+  /* 🔥 额外保护：防止内容撑开 */
+  overflow-wrap: anywhere !important;
+  hyphens: auto !important;
+}
+
+/* 15. Improved Lesson Content 内的所有元素 - 更严格的控制 */
+.improved-lesson-content *,
+.improved-lesson-content *::before,
+.improved-lesson-content *::after {
+  max-width: 100% !important;
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+  box-sizing: border-box !important;
+  overflow-wrap: anywhere !important;
+}
+
+.improved-lesson-content pre {
+  margin: 0 !important;
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+  max-width: 100% !important;
+  font-family: inherit !important;
+  overflow-wrap: anywhere !important;
+}
+
+.improved-lesson-content p,
+.improved-lesson-content div,
+.improved-lesson-content span,
+.improved-lesson-content strong,
+.improved-lesson-content em,
+.improved-lesson-content b,
+.improved-lesson-content i {
+  max-width: 100% !important;
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+  overflow-wrap: anywhere !important;
+}
+
+/* 16. 表格处理 */
+.improved-lesson-content table {
+  width: 100%;
+  max-width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.improved-lesson-content td,
+.improved-lesson-content th {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  padding: 0.5rem;
+}
+
+/* 17. 链接和代码处理 */
+.improved-lesson-content a {
+  word-break: break-all;
+  overflow-wrap: break-word;
+}
+
+.improved-lesson-content code {
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* 18. 滚动条美化 */
+.improved-lesson-content::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.improved-lesson-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.improved-lesson-content::-webkit-scrollbar-thumb {
+  background: #8b5cf6;
+  border-radius: 4px;
+}
+
+.improved-lesson-content::-webkit-scrollbar-thumb:hover {
+  background: #7c3aed;
+}
+
+/* 19. Analysis Section 文本内容 */
+.analysis-section ul li {
+  max-width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* 20. Agent Recommendations */
+.agent-recommendations ul li {
+  max-width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* 21. 响应式调整 */
+@media (max-width: 1200px) {
+  .scores-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .main-content-centered {
+    padding: 1rem;
+  }
+  
+  .content-wrapper {
+    padding: 0;
+  }
+  
+  .scores-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .improved-lesson-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .download-button {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .improved-lesson-content {
+    padding: 1rem;
+    font-size: 0.85rem;
+  }
+}
+
+/* 22. 确保 Grid 子元素不溢出 */
+.dimension-scores-grid > *,
+.scores-grid > * {
+  min-width: 0; /* 关键：允许 grid 子项收缩到比内容更小 */
+  overflow: hidden;
+}
+
+/* 23. 文本内容通用规则 */
+.results-section p,
+.results-section li,
+.results-section span,
+.results-section div {
+  max-width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* 24. 防止长文本撑开容器 */
+.agent-card-header h4,
+.agent-role,
+.dimension-card h4 {
+  max-width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* 25. 确保所有卡片类组件不溢出 */
+[class*="card"],
+[class*="section"] {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* 26. Header 固定 */
+.app-header {
+  width: 100%;
+  max-width: 100vw;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.header-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  box-sizing: border-box;
+}
+
+/* 27. Footer 固定 */
+.app-footer {
+  width: 100%;
+  max-width: 100vw;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+/* 28. 特殊情况：Streaming Indicator */
+.streaming-indicator {
+  max-width: 100%;
+  box-sizing: border-box;
+  word-wrap: break-word;
+}
+
+/* 29. 防止按钮撑开容器 */
+.submit-button,
+.evaluate-button,
+.generate-improved-button {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* 30. 确保表单元素不溢出 */
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+
+/* ===== 优化 Remove File 按钮样式 ===== */
+.remove-file-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center; /* ✅ 添加：水平居中 */
+  gap: 8px; /* ✅ 从6px增加到8px，间距更舒适 */
+  padding: 10px 20px; /* ✅ 增加内边距，按钮更饱满 */
+  margin-top: 1rem;
+  background: white;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+  white-space: nowrap; /* ✅ 添加：防止文字换行 */
+}
+
+.remove-file-btn:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+  background: #fef2f2;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
+}
+
+.remove-file-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(239, 68, 68, 0.2);
+}
+
+.remove-file-btn svg {
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+  width: 18px; /* ✅ 明确设置宽度 */
+  height: 18px; /* ✅ 明确设置高度 */
+}
+
+.remove-file-btn:hover svg {
+  transform: rotate(90deg);
+}
+
+.remove-file-btn span {
+  white-space: nowrap;
+  line-height: 1; /* ✅ 添加：确保文字垂直居中 */
+}
+
+

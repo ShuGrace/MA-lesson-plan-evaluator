@@ -1,0 +1,630 @@
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, File
+from fastapi.middleware.cors import CORSMiddleware
+from app.db.database import Database, init_database
+from typing import List, Optional
+from pydantic import BaseModel
+import traceback
+from contextlib import asynccontextmanager
+from io import BytesIO
+import re
+
+# 文件处理库
+try:
+    import docx
+    DOCX_AVAILABLE = True
+except ImportError:
+    DOCX_AVAILABLE = False
+    print("⚠️  python-docx not installed. Word file support disabled.")
+
+try:
+    import PyPDF2
+    PDF_AVAILABLE = True
+except ImportError:
+    PDF_AVAILABLE = False
+    print("⚠️  PyPDF2 not installed. PDF file support disabled.")
+
+# Import config and LLMClient
+from app.config import API_MODE
+from app.services.llm_client import LLMClient
+
+# ==========================================
+# Lifespan handler (startup/shutdown)
+# ==========================================
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    try:
+        init_database(reset=False)
+        print("✅ Database initialized successfully")
+    except Exception as e:
+        print(f"⚠️  Database initialization warning: {e}")
+    yield
+    # Shutdown
+    print("👋 Application shutdown")
+
+app = FastAPI(title="Lesson Plan Evaluator API", lifespan=lifespan)
+
+# CORS configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ==========================================
+# Pydantic Models
+# ==========================================
+class EvaluationCreate(BaseModel):
+    lesson_plan_text: str
+    lesson_plan_title: Optional[str] = None
+    grade_level: Optional[str] = None
+    subject_area: Optional[str] = None
+
+class EvaluationUpdate(BaseModel):
+    place_based_score: Optional[int] = None
+    cultural_score: Optional[int] = None
+    overall_score: Optional[int] = None
+    status: Optional[str] = None
+    agent_responses: Optional[List[dict]] = None
+    debate_transcript: Optional[dict] = None
+    recommendations: Optional[List[str]] = None
+
+class ImproveLessonRequest(BaseModel):
+    original_lesson: str
+    lesson_title: str
+    grade_level: Optional[str] = None
+    subject_area: Optional[str] = None
+    recommendations: List[str]
+    scores: dict
+
+# ==========================================
+# Database Dependency
+# ==========================================
+def get_db():
+    db = Database()
+    db.connect()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# ==========================================
+# Root Endpoint
+# ==========================================
+@app.get("/")
+async def root():
+    return {
+        "message": "Lesson Plan Evaluator API",
+        "mode": API_MODE,
+        "database": "connected",
+        "status": "operational",
+        "features": {
+            "file_upload": {
+                "word": DOCX_AVAILABLE,
+                "pdf": PDF_AVAILABLE
+            }
+        }
+    }
+
+# ==========================================
+# 新功能1: 文件文本提取端点
+# ==========================================
+@app.post("/api/extract-text")
+async def extract_text_from_file(file: UploadFile = File(...)):
+    """
+    从上传的 Word 或 PDF 文件中提取文本
+    """
+    try:
+        content = await file.read()
+        text = ""
+        title = ""
+        
+        if file.filename.endswith('.docx'):
+            if not DOCX_AVAILABLE:
+                raise HTTPException(status_code=501, detail="Word file support not installed. Please install python-docx: pip install python-docx")
+            
+            # 处理 Word 文件
+            doc = docx.Document(BytesIO(content))
+            paragraphs = [p.text for p in doc.paragraphs if p.text.strip()]
+            text = '\n\n'.join(paragraphs)
+            
+            # 提取标题（第一个非空段落）
+            if paragraphs:
+                title = paragraphs[0][:100]  # 限制标题长度
+            
+        elif file.filename.endswith('.pdf'):
+            if not PDF_AVAILABLE:
+                raise HTTPException(status_code=501, detail="PDF file support not installed. Please install PyPDF2: pip install PyPDF2")
+            
+            # 处理 PDF 文件
+            pdf_reader = PyPDF2.PdfReader(BytesIO(content))
+            pages_text = []
+            for page in pdf_reader.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    pages_text.append(page_text)
+            text = '\n\n'.join(pages_text)
+            
+            # 提取标题（文件名或第一行）
+            title = file.filename.replace('.pdf', '')
+            if text:
+                first_line = text.split('\n')[0][:100]
+                if first_line:
+                    title = first_line
+            
+        elif file.filename.endswith('.doc'):
+            # 旧版Word格式不支持
+            raise HTTPException(status_code=400, detail="旧版 .doc 格式不支持，请转换为 .docx 格式")
+        else:
+            raise HTTPException(status_code=400, detail="不支持的文件格式，只支持 .docx 和 .pdf")
+        
+        if not text.strip():
+            raise HTTPException(status_code=400, detail="无法从文件中提取文本内容")
+        
+        return {
+            "status": "success",
+            "text": text,
+            "metadata": {
+                "title": title,
+                "filename": file.filename,
+                "length": len(text),
+                "word_count": len(text.split())
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error extracting text: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"文件处理失败: {str(e)}")
+
+# ==========================================
+# 新功能2: AI改进教案生成端点
+# ==========================================
+llm_client = LLMClient()
+
+@app.post("/api/improve-lesson")
+async def improve_lesson(request: ImproveLessonRequest):
+    """
+    根据评估建议生成改进版教案
+    """
+    try:
+        # 清理建议列表，移除emoji和重复项
+        cleaned_recommendations = []
+        for rec in request.recommendations:
+            # 移除emoji和特殊字符
+            cleaned = re.sub(r'[⚠️🚩]', '', rec).strip()
+            if cleaned and cleaned not in cleaned_recommendations:
+                cleaned_recommendations.append(cleaned)
+        
+        # 构建详细的评分信息
+        scores_text = f"""
+评估分数：
+- 总分 (Overall): {request.scores.get('overall', 0)}/100
+- 地方性学习 (Place-Based Learning): {request.scores.get('place_based_learning', 0)}/100
+- 文化回应性 (Cultural Responsiveness): {request.scores.get('cultural_responsiveness', 0)}/100
+- 批判性教学法 (Critical Pedagogy): {request.scores.get('critical_pedagogy', 0)}/100
+- 评估质量 (Assessment Quality): {request.scores.get('assessment_quality', 0)}/100
+- 反思性实践 (Reflective Practice): {request.scores.get('reflective_practice', 0)}/100
+"""
+        
+        # 构建提示词
+        prompt = f"""你是一位资深的新西兰教育专家，专精于课程设计和教学法改进。请根据下面的评估结果和改进建议，生成一份优化后的完整教案。
+
+【原教案信息】
+标题：{request.lesson_title}
+年级：{request.grade_level or '未指定'}
+学科：{request.subject_area or '未指定'}
+
+【原教案内容】
+{request.original_lesson}
+
+【评估结果】
+{scores_text}
+
+【改进建议】（共 {len(cleaned_recommendations)} 条）
+{chr(10).join(f"{i+1}. {rec}" for i, rec in enumerate(cleaned_recommendations))}
+
+【任务要求】
+请生成一份改进后的完整教案，要求：
+
+1. **保留核心优势**：保持原教案中得分高的部分（如地方性学习、文化回应性等优势）
+2. **针对性改进**：重点优化得分较低的维度（如批判性教学法、评估质量、反思性实践）
+3. **整合所有建议**：系统性地融入上述所有改进建议
+4. **新西兰教育背景**：
+   - 体现 Te Whāriki 和 New Zealand Curriculum 的理念
+   - 融入 Māori 文化元素和 te reo Māori
+   - 注重 whanaungatanga（关系）和 manaakitanga（关怀）
+5. **完整结构**：包括以下部分
+   - 课程概述与学习目标
+   - 详细教学活动设计（包含时间安排）
+   - 差异化教学策略
+   - 评估方法与标准（含详细评分标准）
+   - 反思与改进机制
+   - 所需资源清单
+
+【输出格式】
+请使用清晰的标题层次结构，使用 Markdown 格式输出完整教案。确保教案具有可操作性，教师可以直接使用。
+
+开始生成改进版教案：
+"""
+        
+        # 调用 Claude API 生成改进版教案
+        if API_MODE == "mock":
+            # Mock 模式返回示例
+            improved_lesson = f"""# {request.lesson_title} - 改进版
+
+## 课程概述
+本课程已根据专家评估建议进行全面优化，提升了批判性思维、评估质量和反思实践等关键维度。
+
+### 学习目标
+1. 学生能够批判性地分析环境问题的根本原因
+2. 学生能够识别问题中的权力和正义维度
+3. 学生能够提出可持续的解决方案
+
+## 详细教学活动
+
+### 第1-2周：问题探究与批判性分析
+**活动1：批判性提问框架** (90分钟)
+- 引导学生使用"WHO, WHY, WHAT"框架分析社区环境问题
+- WHO: 谁受到影响？谁做出决定？
+- WHY: 为什么存在这个问题？历史根源是什么？
+- WHAT: 可以采取什么行动？
+
+### 评估方法
+**详细评分标准：**
+- 批判性分析 (30%): 能够识别问题的根本原因和权力结构
+- 协作能力 (25%): 团队合作和沟通
+- 文化回应 (20%): 体现 tikanga Māori 和本地文化
+- 行动方案 (25%): 提出可行的改进策略
+
+### 反思机制
+**每周学习日志：**
+学生每周撰写200字的反思，包括：
+- 本周学到了什么？
+- 遇到什么挑战？
+- 下一步计划是什么？
+
+**Tuakana-Teina 同伴反馈：**
+在第2、4、5周进行结构化的同伴评议。
+
+## 资源清单
+- 批判性思维框架模板
+- 评估标准清单
+- 学习日志模板
+- 社区联系人名单
+
+（这是mock模式的示例响应）
+"""
+        else:
+            # 实际调用 Claude API
+            improved_lesson = await llm_client.call("claude", prompt)
+        
+        return {
+            "status": "success",
+            "improved_lesson": improved_lesson,
+            "original_title": request.lesson_title,
+            "recommendations_applied": len(cleaned_recommendations)
+        }
+        
+    except Exception as e:
+        print(f"Error generating improved lesson: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"生成改进版教案失败: {str(e)}")
+
+# ==========================================
+# CRUD Endpoints (保持原有功能)
+# ==========================================
+@app.post("/api/evaluations", response_model=dict)
+async def create_evaluation_record(evaluation: EvaluationCreate, db: Database = Depends(get_db)):
+    try:
+        eval_id = db.create_evaluation(
+            lesson_plan_text=evaluation.lesson_plan_text,
+            lesson_plan_title=evaluation.lesson_plan_title,
+            grade_level=evaluation.grade_level,
+            subject_area=evaluation.subject_area,
+            api_mode=API_MODE
+        )
+        return {"status": "success", "evaluation_id": eval_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create evaluation: {str(e)}")
+
+@app.get("/api/evaluations")
+async def get_all_evaluations(limit: int = 50, status: Optional[str] = None, db: Database = Depends(get_db)):
+    try:
+        if status:
+            evals = db.get_evaluations_by_status(status)
+        else:
+            evals = db.get_all_evaluations(limit=limit)
+        return {
+            "status": "success",
+            "evaluations": evals,
+            "count": len(evals)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve evaluations: {str(e)}")
+
+@app.get("/api/evaluations/{evaluation_id}")
+async def get_evaluation_by_id(evaluation_id: int, db: Database = Depends(get_db)):
+    evaluation = db.get_evaluation(evaluation_id)
+    if not evaluation:
+        raise HTTPException(status_code=404, detail="Evaluation not found")
+    return {
+        "status": "success",
+        "evaluation": evaluation
+    }
+
+@app.put("/api/evaluations/{evaluation_id}", response_model=dict)
+async def update_evaluation(evaluation_id: int, update_data: EvaluationUpdate, db: Database = Depends(get_db)):
+    evaluation = db.get_evaluation(evaluation_id)
+    if not evaluation:
+        raise HTTPException(status_code=404, detail="Evaluation not found")
+
+    if all([update_data.place_based_score, update_data.cultural_score, update_data.overall_score]):
+        db.update_evaluation_scores(
+            eval_id=evaluation_id,
+            place_based_score=update_data.place_based_score,
+            cultural_score=update_data.cultural_score,
+            overall_score=update_data.overall_score
+        )
+
+    if update_data.agent_responses or update_data.debate_transcript or update_data.recommendations:
+        db.update_evaluation_results(
+            eval_id=evaluation_id,
+            agent_responses=update_data.agent_responses or [],
+            debate_transcript=update_data.debate_transcript or {},
+            recommendations=update_data.recommendations or [],
+            status=update_data.status or "completed"
+        )
+
+    if update_data.status and not any([update_data.agent_responses, update_data.debate_transcript, update_data.recommendations]):
+        db.update_evaluation_status(evaluation_id, update_data.status)
+
+    return {"status": "success", "evaluation_id": evaluation_id}
+
+@app.delete("/api/evaluations/{evaluation_id}", response_model=dict)
+async def delete_evaluation_record(evaluation_id: int, db: Database = Depends(get_db)):
+    evaluation = db.get_evaluation(evaluation_id)
+    if not evaluation:
+        raise HTTPException(status_code=404, detail="Evaluation not found")
+    db.delete_evaluation(evaluation_id)
+    return {"status": "success", "message": "Evaluation deleted successfully"}
+
+@app.get("/api/statistics")
+async def get_statistics(db: Database = Depends(get_db)):
+    try:
+        stats = db.get_statistics()
+        return {
+            "status": "success",
+            "statistics": stats
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve statistics: {str(e)}")
+
+# ==========================================
+# Evaluation Endpoint (保持原有功能)
+# ==========================================
+@app.post("/api/evaluate/lesson")
+async def evaluate_lesson(lesson_plan: dict, db: Database = Depends(get_db)):
+    """
+    Main evaluation endpoint - returns scores and agent evaluations
+    """
+    text = lesson_plan.get("text", "")
+    
+    print(f"📝 Evaluating lesson plan: {lesson_plan.get('title', 'Untitled')}")
+
+    if API_MODE == "mock":
+        # Mock scores with realistic values
+        place_based_score = 84
+        cultural_score = 82
+        critical_pedagogy_score = 76
+        assessment_quality_score = 74
+        reflective_practice_score = 73
+        overall_score = 82
+
+        agent_responses = [
+            {
+                "agent": "DeepSeek", 
+                "role": "Place-Based Learning & Pedagogical Design Expert", 
+                "model": "deepseek-chat",
+                "timestamp": "2024-01-15T10:30:00Z",
+                "analysis": {
+                    "place_based_learning": {
+                        "score": 84,
+                        "strengths": [
+                            "Strong integration of local waterways as learning context",
+                            "Meaningful connections to Awa Tupua (river rights) legislation",
+                            "Authentic community partnerships with local kaumātua and iwi"
+                        ],
+                        "areas_for_improvement": [
+                            "Could expand on historical land use patterns",
+                            "Limited connection to students' own neighborhoods",
+                            "Recommend adding student-led inquiry components",
+                            "Consider long-term community partnership sustainability plan"
+                        ]
+                    },
+                    "pedagogical_design": {
+                        "score": 82,
+                        "comment": "Solid instructional design with clear learning progression and scaffolding"
+                    }
+                },
+                "recommendations": [
+                    "Add explicit interdisciplinary connections mapped to curriculum standards",
+                    "Design scaffolded inquiry questions for different ability levels",
+                    "Include extension activities for advanced learners",
+                    "Create community partnership sustainability plan"
+                ]
+            },
+            {
+                "agent": "Claude", 
+                "role": "Cultural Responsiveness & Indigenous Education Expert", 
+                "model": "claude-sonnet-4-5",
+                "timestamp": "2024-01-15T10:30:05Z",
+                "analysis": {
+                    "cultural_responsiveness": {
+                        "score": 82,
+                        "strengths": [
+                            "Good use of te reo Māori throughout the lesson",
+                            "Demonstrates respect for tikanga Māori protocols",
+                            "Includes consultation with local kaumātua",
+                            "Shows understanding of kaitiakitanga (guardianship) principles"
+                        ],
+                        "areas_for_improvement": [
+                            "Could deepen understanding of mauri (life force) concept",
+                            "Add more explicit cultural safety protocols",
+                            "Recommend earlier consultation with mana whenua in planning stage"
+                        ],
+                        "cultural_elements_present": [
+                            "Te reo Māori vocabulary",
+                            "Whakapapa (genealogy) connections",
+                            "Karakia (prayer/incantation)",
+                            "Whanaungatanga (relationships)"
+                        ]
+                    }
+                },
+                "recommendations": [
+                    "Invite kaitiaki (guardians) to co-teach specific sessions",
+                    "Create a cultural protocol checklist for field visits",
+                    "Incorporate more whakataukī (proverbs) relevant to water",
+                    "Develop formal relationship with local marae before project begins"
+                ],
+                "resources_suggested": ["peer_feedback_protocol"]
+            },
+            {
+                "agent": "GPT-4", 
+                "role": "Critical Pedagogy, Assessment & Reflective Practice Expert", 
+                "model": "gpt-4-turbo",
+                "timestamp": "2024-01-15T10:30:10Z",
+                "analysis": {
+                    "critical_pedagogy": {
+                        "score": 76,
+                        "strengths": [
+                            "Encourages student-led inquiry",
+                            "Addresses real community environmental issues",
+                            "Promotes student agency in problem-solving"
+                        ],
+                        "gaps": [
+                            "MISSING: Critical analysis of root causes (WHY problems exist)",
+                            "MISSING: Power/justice analysis (WHO is affected, WHO decides)",
+                            "MISSING: Action-oriented component (students as change agents)",
+                            "MISSING: Scaffolding for critical questioning"
+                        ]
+                    },
+                    "assessment_quality": {
+                        "score": 74,
+                        "strengths": [
+                            "Includes authentic audience (community presentation)",
+                            "Multiple assessment formats mentioned"
+                        ],
+                        "gaps": [
+                            "CRITICAL: Missing detailed assessment rubric",
+                            "MISSING: Clear success criteria",
+                            "MISSING: Differentiated assessment options",
+                            "MISSING: Self-assessment component"
+                        ]
+                    },
+                    "reflective_practice": {
+                        "score": 73,
+                        "strengths": [
+                            "Includes final reflection component"
+                        ],
+                        "gaps": [
+                            "CRITICAL: No weekly learning journal structure",
+                            "MISSING: Ongoing reflection checkpoints throughout project",
+                            "MISSING: Peer feedback protocol (Tuakana-Teina model)",
+                            "MISSING: Metacognitive reflection prompts"
+                        ]
+                    }
+                },
+                "recommendations": [
+                    "Add critical thinking scaffolds: 'WHO benefits? WHY is this happening? What historical factors?'",
+                    "Develop detailed assessment rubric using provided template",
+                    "Implement weekly learning journal with structured prompts (200+ words)",
+                    "Establish Tuakana-Teina peer feedback protocol at Weeks 2, 4, 5",
+                    "Include student action plan for ongoing community impact"
+                ],
+                "resources_suggested": ["assessment_rubric", "learning_journal", "peer_feedback_protocol"]
+            }
+        ]
+        
+        recommendations = [
+            "Strengthen collaboration with kaumātua and local iwi",
+            "Implement detailed assessment rubric with cultural criteria",
+            "Add structured learning journal with weekly reflections", 
+            "Establish Tuakana-Teina peer feedback protocol",
+            "Include critical thinking scaffolds (WHO, WHY, WHAT analysis)"
+        ]
+        
+    else:
+        # Real API calls
+        print("🤖 Calling real LLM APIs...")
+        ds_content = await llm_client.call("deepseek", f"Evaluate place-based learning in: {text}")
+        cl_content = await llm_client.call("claude", f"Evaluate cultural responsiveness in: {text}")
+        cg_content = await llm_client.call("chatgpt", f"Provide overall evaluation and recommendations for: {text}")
+
+        # TODO: Parse actual scores from LLM responses
+        place_based_score = 85
+        cultural_score = 80
+        critical_pedagogy_score = 76
+        assessment_quality_score = 74
+        reflective_practice_score = 73
+        overall_score = 82
+
+        agent_responses = [
+            {"agent": "DeepSeek", "role": "Place-Based Learning Expert", "content": ds_content, "score": place_based_score},
+            {"agent": "Claude", "role": "Cultural Responsiveness Specialist", "content": cl_content, "score": cultural_score},
+            {"agent": "GPT-4", "role": "Critical Pedagogy Facilitator", "content": cg_content, "score": critical_pedagogy_score}
+        ]
+        
+        recommendations = [
+            "Strengthen community partnerships", 
+            "Increase te reo Māori integration",
+            "Add structured reflection components"
+        ]
+
+    # Create evaluation in database
+    eval_id = db.create_evaluation(
+        lesson_plan_text=text,
+        lesson_plan_title=lesson_plan.get("title", "Untitled Lesson Plan"),
+        grade_level=lesson_plan.get("grade_level", ""),
+        subject_area=lesson_plan.get("subject_area", ""),
+        api_mode=API_MODE
+    )
+
+    # Update with scores
+    db.update_evaluation_scores(
+        eval_id=eval_id,
+        place_based_score=place_based_score,
+        cultural_score=cultural_score,
+        overall_score=overall_score
+    )
+
+    # Update with results
+    db.update_evaluation_results(
+        eval_id=eval_id,
+        agent_responses=agent_responses, 
+        debate_transcript={}, 
+        recommendations=recommendations, 
+        status="completed"
+    )
+
+    print(f"✅ Evaluation completed: ID {eval_id}, Overall Score: {overall_score}")
+
+    # Return complete response with ALL scores
+    return {
+        "status": "success",
+        "evaluation_id": eval_id,
+        "scores": {
+            "place_based_learning": place_based_score,
+            "cultural_responsiveness": cultural_score,
+            "critical_pedagogy": critical_pedagogy_score,
+            "assessment_quality": assessment_quality_score,
+            "reflective_practice": reflective_practice_score,
+            "overall": overall_score
+        },
+        "agent_responses": agent_responses,
+        "recommendations": recommendations,
+        "mode": API_MODE
+    }

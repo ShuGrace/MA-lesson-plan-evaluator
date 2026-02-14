@@ -1,0 +1,491 @@
+{
+  "framework_metadata": {
+    "name": "Culturally Responsive Place-Based Lesson Plan Evaluation Framework",
+    "version": "2.0",
+    "context": "K-12 Education in Aotearoa New Zealand",
+    "created_date": "2025-01-15",
+    "updated_date": "2025-11-20",
+    "author": "Grace - UoA Educational Technology PhD",
+    "description": "Theoretical framework for evaluating lesson plans integrating place-based learning, cultural responsiveness (including Māori perspectives), and critical pedagogy in New Zealand educational contexts",
+    "changelog": {
+      "v2.0": "Merged 'maori_perspectives' and 'cultural_responsiveness' into unified 'cultural_responsiveness' dimension to eliminate redundancy while maintaining comprehensive coverage of both general cultural responsiveness and Māori-specific perspectives"
+    }
+  },
+
+  "dimensions": {
+    
+    "place_based_learning": {
+      "label": "Place-Based Learning",
+      "code": "PBL",
+      "definition": "Teaching and learning grounded in local environment, community, and culture, connecting students deeply to the places where they live through authentic, real-world experiences",
+      "weight": 0.30,
+      
+      "theoretical_foundation": {
+        "core_literature": [
+          {
+            "citation": "Sobel, D. (2004). Place-based education: Connecting classrooms and communities. Orion Society.",
+            "key_contribution": "Emphasizes using local community and environment as starting point; promotes interdisciplinary learning around local phenomena; cultivates attachment to place and environmental stewardship"
+          },
+          {
+            "citation": "Smith, G. A. (2007). Place-based education: Breaking through the constraining regularities of public school. Environmental Education Research, 13(2), 189-207.",
+            "key_contribution": "Challenges traditional schooling constraints; emphasizes community as classroom; values intergenerational learning and local knowledge transmission"
+          },
+          {
+            "citation": "Gruenewald, D. A. (2003). The best of both worlds: A critical pedagogy of place. Educational Researcher, 32(4), 3-12.",
+            "key_contribution": "Combines critical pedagogy with ecological education; emphasizes decolonization and reinhabitation; questions dominant narratives shaping places"
+          }
+        ]
+      },
+
+      "indicators": [
+        {
+          "code": "PBL_01",
+          "name": "Local Context Integration",
+          "definition": "Uses students' surrounding environments, places, and resources as primary learning content rather than abstract or generic examples",
+          "source": "Sobel (2004)",
+          "assessment_question": "Does the lesson meaningfully reference specific local environments, landmarks, ecosystems, or community resources?",
+          "examples": {
+            "high_quality": "Lesson investigates water quality of specific local river (e.g., Waitematā Harbour); students analyze historical land use changes in their suburb using old maps and current observations",
+            "low_quality": "Generic lesson on 'rivers' that could be taught anywhere; uses textbook examples from overseas"
+          }
+        },
+        {
+          "code": "PBL_02",
+          "name": "Community Engagement",
+          "definition": "Involves authentic partnerships with community members, organizations, or uses community as classroom rather than confining learning to school",
+          "source": "Smith (2007)",
+          "assessment_question": "Does the lesson involve collaboration with local experts, organizations, or learning in community settings?",
+          "examples": {
+            "high_quality": "Students interview local kaumātua (elders) about historical changes; partner with city council on native planting project; conduct fieldwork at local marae",
+            "low_quality": "All learning confined to classroom; no community member involvement; purely textbook-based"
+          }
+        },
+        {
+          "code": "PBL_03",
+          "name": "Authentic Problem-Solving",
+          "definition": "Addresses real environmental or social issues in the local area that have genuine consequences and stakeholders",
+          "source": "Sobel (2004), Smith (2007)",
+          "assessment_question": "Are students investigating or addressing actual problems facing their community?",
+          "examples": {
+            "high_quality": "Students develop proposal for protecting local wetland threatened by development; create action plan for reducing school's carbon footprint presented to board",
+            "low_quality": "Hypothetical scenarios; simulation activities with no real-world connection or consequences"
+          }
+        },
+        {
+          "code": "PBL_04",
+          "name": "Interdisciplinary Learning",
+          "definition": "Integrates multiple subject areas around place-based phenomena rather than isolated disciplinary silos",
+          "source": "Sobel (2004)",
+          "assessment_question": "Does the lesson connect multiple disciplines (e.g., science, social studies, language arts, maths) through place-based inquiry?",
+          "examples": {
+            "high_quality": "Study of local forest integrates ecology (science), indigenous plant uses (social studies), measuring tree growth (maths), writing nature poetry (language arts)",
+            "low_quality": "Purely disciplinary lesson; no integration across subject areas"
+          }
+        },
+        {
+          "code": "PBL_05",
+          "name": "Indigenous Knowledge Integration",
+          "definition": "Respectfully incorporates mātauranga Māori or other indigenous knowledge systems as valid ways of knowing about place",
+          "source": "Gruenewald (2003), Smith (2007)",
+          "assessment_question": "Does the lesson integrate Māori perspectives on environment, place, and community as legitimate knowledge?",
+          "examples": {
+            "high_quality": "Lesson explores local ecosystem through both Western scientific and Māori ecological knowledge (e.g., maramataka lunar calendar, kaitiakitanga guardianship, rongoā medicinal plants)",
+            "low_quality": "Only Western scientific perspectives presented; indigenous knowledge absent or tokenistic"
+          }
+        },
+        {
+          "code": "PBL_06",
+          "name": "Critical Place Consciousness",
+          "definition": "Encourages students to critically examine power relations, histories (especially colonization), and current issues shaping their place",
+          "source": "Gruenewald (2003)",
+          "assessment_question": "Does the lesson promote critical analysis of how historical and contemporary power dynamics have shaped this place?",
+          "examples": {
+            "high_quality": "Students investigate how colonization transformed local whenua (land); analyze current environmental justice issues (e.g., who benefits/suffers from industrial development); examine gentrification impacts",
+            "low_quality": "Uncritical description of place; avoids discussing power, conflict, or injustice; purely celebratory tone"
+          }
+        }
+      ],
+
+      "scoring_rubric": {
+        "5_exceptional": "Deeply grounded in specific local context with substantive community partnerships; addresses real problems with critical consciousness; seamlessly integrates mātauranga Māori and multiple disciplines",
+        "4_proficient": "Strong local connections with some community involvement; addresses authentic issues; includes Māori perspectives; mostly interdisciplinary",
+        "3_developing": "Some local references but could be more specific; limited community engagement; attempts to address real issues; token inclusion of Māori knowledge; some interdisciplinary connections",
+        "2_emerging": "Minimal local context; little community involvement; mostly hypothetical scenarios; superficial or absent Māori perspectives; primarily single-discipline",
+        "1_inadequate": "Generic lesson with no meaningful local connection; no community engagement; entirely hypothetical; no indigenous perspectives; siloed discipline"
+      }
+    },
+
+    "cultural_responsiveness": {
+      "label": "Cultural Responsiveness & Māori Perspectives",
+      "code": "CR-MP",
+      "definition": "Unified pedagogical approach that recognizes and validates diverse cultural backgrounds (including Māori), honors Te Tiriti o Waitangi, integrates Māori worldviews and knowledge systems, and ensures all students (especially Māori) achieve success while maintaining cultural integrity",
+      "weight": 0.40,
+      "note": "This unified dimension encompasses both general cultural responsiveness and Māori perspectives, recognizing that in Aotearoa New Zealand's educational context, these are interconnected through Te Tiriti obligations and bicultural commitments",
+
+      "theoretical_foundation": {
+        "core_literature": [
+          {
+            "citation": "Gay, G. (2010). Culturally responsive teaching: Theory, research, and practice (2nd ed.). Teachers College Press.",
+            "key_contribution": "Uses students' cultural knowledge, prior experiences, and performance styles as teaching bridges; emphasizes cultural competence development; teaching content and methods reflect cultural diversity"
+          },
+          {
+            "citation": "Ladson-Billings, G. (1995). Toward a theory of culturally relevant pedagogy. American Educational Research Journal, 32(3), 465-491.",
+            "key_contribution": "Three pillars: academic success, cultural competence, and critical consciousness; students maintain cultural integrity while achieving academically; challenge social inequities"
+          },
+          {
+            "citation": "Paris, D., & Alim, H. S. (2017). Culturally sustaining pedagogies. Teachers College Press.",
+            "key_contribution": "Evolution from 'responsive' to 'sustaining'; actively sustains and develops marginalized communities' cultural and linguistic practices; students as cultural producers"
+          },
+          {
+            "citation": "Bishop, R., & Glynn, T. (1999). Culture counts: Changing power relations in education. Zed Books.",
+            "key_contribution": "Māori educational failure stems from power imbalances and cultural marginalization; proposes whānau and whakapapa-based approaches; emphasizes Māori self-determination as Treaty partners"
+          },
+          {
+            "citation": "Smith, L. T. (2012). Decolonizing methodologies: Research and indigenous peoples (2nd ed.). Zed Books.",
+            "key_contribution": "Western education as colonial instrument; Kaupapa Māori framework must guide practice; emphasizes tino rangatiratanga (sovereignty) and mana motuhake (self-determination)"
+          },
+          {
+            "citation": "Orange, C. (2011). The Treaty of Waitangi (2nd ed.). Bridget Williams Books.",
+            "key_contribution": "Three principles: Partnership (equal collaboration), Protection (of language and culture), Participation (equitable outcomes)"
+          },
+          {
+            "citation": "Ministry of Education. (2013). Ka Hikitia – Accelerating success 2013-2017. New Zealand Government.",
+            "key_contribution": "Māori enjoying education success as Māori; system must change to serve Māori, not vice versa"
+          }
+        ]
+      },
+
+      "indicator_sections": {
+        "general_cultural_responsiveness": {
+          "description": "Indicators addressing cultural diversity broadly",
+          "indicators": [
+            {
+              "code": "CR_01",
+              "name": "Cultural Knowledge Validation",
+              "definition": "Recognizes students' home and community cultural knowledge (including Māori) as legitimate academic resources rather than deficits to overcome",
+              "source": "Gay (2010), Ladson-Billings (1995), Bishop & Glynn (1999)",
+              "assessment_question": "Does the lesson explicitly value and build upon students' diverse cultural backgrounds, family knowledge, and community practices?",
+              "examples": {
+                "high_quality": "Lesson asks students to share family migration stories and iwi histories as primary sources; validates diverse home languages including Te Reo; uses community cultural practices (kapa haka, Pacific dance, Asian festivals) as pedagogical tools",
+                "low_quality": "Only mainstream/Pākehā cultural knowledge recognized as valid; students' cultural backgrounds ignored or seen as barriers; assumes cultural neutrality"
+              }
+            },
+            {
+              "code": "CR_02",
+              "name": "Multicultural Content Integration",
+              "definition": "Curriculum includes diverse cultural perspectives, histories, figures, and examples, with particular attention to Māori and Pacific voices",
+              "source": "Gay (2010), Paris (2017), Smith (2012)",
+              "assessment_question": "Does the lesson content reflect cultural diversity through varied perspectives, authors, historical narratives, and examples?",
+              "examples": {
+                "high_quality": "Literature includes Māori, Pacific, Asian, and European authors; history explores multiple perspectives on Treaty of Waitangi; science highlights diverse cultural contributions including mātauranga Māori",
+                "low_quality": "Only Pākehā/Western perspectives; exclusively European authors; history from colonial viewpoint only; science presented as culturally neutral"
+              }
+            },
+            {
+              "code": "CR_03",
+              "name": "Culturally Relevant Pedagogy",
+              "definition": "Uses teaching strategies aligned with diverse cultural backgrounds and learning preferences, including Māori pedagogical approaches",
+              "source": "Gay (2010), Bishop & Glynn (1999)",
+              "assessment_question": "Does the lesson employ teaching methods that resonate with diverse cultural learning styles?",
+              "examples": {
+                "high_quality": "Emphasizes group work reflecting collectivist values; uses storytelling, whakapapa, and oral presentation; incorporates movement and kinesthetic learning; allows flexible participation patterns; employs ako (reciprocal learning)",
+                "low_quality": "Exclusively individual competitive tasks; only written/silent modalities; rigid Western classroom norms; no accommodation for cultural communication styles"
+              }
+            },
+            {
+              "code": "CR_04",
+              "name": "High Expectations with Cultural Scaffolding",
+              "definition": "Sets rigorous academic standards while providing culturally appropriate support structures",
+              "source": "Ladson-Billings (1995), Ka Hikitia (2013)",
+              "assessment_question": "Does the lesson maintain high cognitive demand while offering scaffolds that respect students' cultural ways of knowing?",
+              "examples": {
+                "high_quality": "Requires complex analysis; allows multiple pathways to mastery (oral, visual, written, performance); uses cultural metaphors and whakataukī as scaffolds; provides whānau and peer support",
+                "low_quality": "Waters down content for diverse learners; low expectations masked as 'culturally sensitive'; provides scaffolds only in mainstream formats"
+              }
+            },
+            {
+              "code": "CR_05",
+              "name": "Critical Cultural Consciousness",
+              "definition": "Helps students examine relationships between culture, power, and inequality, including colonial impacts on Māori",
+              "source": "Ladson-Billings (1995), Paris (2017), Smith (2012)",
+              "assessment_question": "Does the lesson enable students to critically analyze how culture intersects with power, privilege, and social structures?",
+              "examples": {
+                "high_quality": "Students analyze cultural representation in media; examine institutional racism and colonization's ongoing impacts; investigate how dominant culture advantages some while marginalizing Māori and others",
+                "low_quality": "Celebrates diversity superficially ('food and festivals'); avoids discussing power, racism, colonization, or injustice; presents cultures as static/exotic"
+              }
+            },
+            {
+              "code": "CR_06",
+              "name": "Cultural Sustaining and Development",
+              "definition": "Supports students in maintaining, developing, and innovating their cultural and linguistic practices, with emphasis on Te Reo Māori revitalization",
+              "source": "Paris & Alim (2017), Ka Hikitia (2013)",
+              "assessment_question": "Does the lesson actively sustain students' heritage languages, cultural practices, and identities?",
+              "examples": {
+                "high_quality": "Encourages code-switching and translanguaging; promotes Te Reo and heritage language development; validates non-standard dialects; supports students creating new cultural expressions",
+                "low_quality": "English-only policy; requires assimilation to mainstream norms; treats Te Reo and heritage languages as obstacles; no support for cultural identity maintenance"
+              }
+            }
+          ]
+        },
+        
+        "maori_perspectives_and_te_tiriti": {
+          "description": "Indicators specifically addressing Māori perspectives and Te Tiriti obligations",
+          "indicators": [
+            {
+              "code": "MP_01",
+              "name": "Te Reo Māori Usage",
+              "definition": "Meaningful incorporation of Māori language beyond tokenistic greetings",
+              "source": "Ka Hikitia (2013), Smith (2012)",
+              "assessment_question": "Does the lesson authentically and respectfully use Te Reo Māori as a living language of instruction and learning?",
+              "examples": {
+                "high_quality": "Subject-specific vocabulary taught in Te Reo; whakataukī used to introduce concepts; key instructions given bilingually; songs/poetry in Māori; students create content in Te Reo; correct macron usage",
+                "low_quality": "Only 'kia ora' and 'ka pai'; decorative use with no meaning; mispronounced or grammatically incorrect; no macrons; tokenistic inclusion"
+              }
+            },
+            {
+              "code": "MP_02",
+              "name": "Mātauranga Māori Integration",
+              "definition": "Integrates Māori knowledge systems, philosophies, and ways of knowing as equally valid to Western knowledge",
+              "source": "Bishop & Glynn (1999), Smith (2012)",
+              "assessment_question": "Does the lesson incorporate mātauranga Māori as legitimate curriculum content and epistemology?",
+              "examples": {
+                "high_quality": "Science explores rongoā alongside Western medicine; maths incorporates Māori star navigation and tukutuku geometry; history centers on oral traditions and whakapapa; maramataka used for planning",
+                "low_quality": "Only Western knowledge systems presented; mātauranga Māori entirely absent or treated as primitive/pre-scientific; no Māori epistemological frameworks"
+              }
+            },
+            {
+              "code": "MP_03",
+              "name": "Tikanga Respect",
+              "definition": "Demonstrates understanding and respect for Māori cultural protocols, values, and customs",
+              "source": "Bishop & Glynn (1999), Smith (2012)",
+              "assessment_question": "Does the lesson follow appropriate tikanga and embody Māori values such as manaakitanga, whanaungatanga, kaitiakitanga?",
+              "examples": {
+                "high_quality": "Begins with karakia; uses mihi appropriately; respects tapu when discussing certain topics; embodies manaakitanga in relationships; honors kaitiakitanga in environmental contexts",
+                "low_quality": "Ignores or violates tikanga; no respect for tapu/noa; uses sacred concepts inappropriately; individualistic competition over whanaungatanga; exploitative rather than reciprocal relationships"
+              }
+            },
+            {
+              "code": "MP_04",
+              "name": "Māori Worldview Representation",
+              "definition": "Reflects Māori philosophical frameworks and ways of understanding the world",
+              "source": "Bishop & Glynn (1999)",
+              "assessment_question": "Does the lesson authentically represent Māori cosmology, values, and ways of seeing the world?",
+              "examples": {
+                "high_quality": "Explores interconnections through whakapapa (genealogical connections to land and each other); uses concepts like mauri, wairua, mana; reflects holistic Māori worldview",
+                "low_quality": "Only Western individualistic, materialistic worldview; Māori perspectives stereotyped or misrepresented; no authentic Māori philosophical frameworks"
+              }
+            },
+            {
+              "code": "MP_05",
+              "name": "Partnership Principle (Te Tiriti)",
+              "definition": "Reflects collaborative, equitable relationships with Māori community and whānau as Treaty partners",
+              "source": "Orange (2011), MoE (2013)",
+              "assessment_question": "Does the lesson involve genuine partnership with Māori community members, whānau, or hapū?",
+              "examples": {
+                "high_quality": "Co-designed with local iwi educators; includes whānau participation; consults kaumātua for cultural guidance; invites Māori community experts; shares decision-making power",
+                "low_quality": "No Māori community involvement; developed entirely by non-Māori without consultation; tokenistic 'cultural advisor' with no real influence; extractive approach"
+              }
+            },
+            {
+              "code": "MP_06",
+              "name": "Protection Principle (Te Tiriti)",
+              "definition": "Protects and promotes Māori language, cultural practices, and intellectual property",
+              "source": "Orange (2011), Ka Hikitia (2013)",
+              "assessment_question": "Does the lesson actively protect and promote Te Reo Māori, tikanga, and mātauranga Māori?",
+              "examples": {
+                "high_quality": "Uses Te Reo correctly with proper macrons; respects cultural intellectual property; seeks permission for sensitive content; promotes language revitalization; protects sacred knowledge appropriately",
+                "low_quality": "Appropriates Māori culture without permission; uses language incorrectly; shares sacred knowledge inappropriately; contributes to cultural erosion; no language promotion"
+              }
+            },
+            {
+              "code": "MP_07",
+              "name": "Participation Principle (Te Tiriti)",
+              "definition": "Ensures equitable opportunities for Māori student engagement, success, and cultural identity affirmation",
+              "source": "Orange (2011), Ka Hikitia (2013)",
+              "assessment_question": "Does the lesson create conditions for Māori students to participate fully and succeed as Māori?",
+              "examples": {
+                "high_quality": "Affirms Māori identity as strength; provides culturally responsive strategies; ensures Māori student voice; celebrates Māori achievement; removes barriers; enables success as Māori",
+                "low_quality": "Requires assimilation to succeed; marginalizes or stereotypes Māori students; no accommodation for cultural identity; deficit views; barriers to participation"
+              }
+            },
+            {
+              "code": "MP_08",
+              "name": "Decolonizing Perspective",
+              "definition": "Critically examines and challenges colonial narratives, centering Māori perspectives and sovereignty",
+              "source": "Smith (2012)",
+              "assessment_question": "Does the lesson decenter Pākehā perspectives, critique colonialism, and center Māori sovereignty?",
+              "examples": {
+                "high_quality": "History taught from Māori perspectives; critiques colonization's ongoing impacts; centers Māori agency and resistance; challenges Pākehā-normative assumptions; affirms tino rangatiratanga",
+                "low_quality": "Colonial perspectives presented as neutral; ignores or justifies colonization; Pākehā perspectives centered as universal; no critique of power imbalances; reinforces settler-colonial status quo"
+              }
+            }
+          ]
+        }
+      },
+
+      "scoring_rubric": {
+        "5_exceptional": "Deeply validates diverse cultural knowledge including mātauranga Māori; rich multicultural content with Māori perspectives central; employs culturally relevant pedagogies including Māori approaches; maintains rigor with culturally appropriate scaffolds; develops critical consciousness about power and colonization; actively sustains cultural practices including Te Reo; extensive meaningful Te Reo use; tikanga embedded; authentic Māori worldview; strong partnership, protection, and participation; explicitly decolonizing",
+        "4_proficient": "Recognizes diverse cultural knowledge; substantial mātauranga Māori integration; includes multicultural perspectives with Māori well-represented; uses culturally relevant strategies; high expectations with scaffolds; addresses cultural power dynamics and colonization; supports cultural maintenance including Te Reo; substantial Te Reo integration; tikanga respected; Māori perspectives evident; demonstrates partnership and protection; promotes Māori success",
+        "3_developing": "Acknowledges cultural diversity; some mātauranga Māori present; multicultural content included; attempts culturally relevant methods; maintains expectations with scaffolds; mentions cultural issues and colonial impacts; limited cultural sustaining; some Te Reo beyond basics; attempts to follow tikanga; includes Māori views; some community connection",
+        "2_emerging": "Minimal recognition of cultural knowledge; token mātauranga Māori and multicultural content; mostly mainstream pedagogy; inconsistent expectations; superficial cultural discussion; no cultural sustaining; minimal Te Reo (basic greetings); superficial tikanga; stereotyped Māori representation; little community involvement; uncritical of colonialism",
+        "1_inadequate": "Ignores or deficitizes cultural backgrounds; mātauranga Māori absent; monocultural content; culturally unresponsive pedagogy; low expectations or no scaffolding; avoids cultural/power issues; assimilationist approach; no meaningful Te Reo; tikanga ignored or violated; no Māori worldview; no partnership; fails to protect or enable participation; reinforces colonial narratives"
+      }
+    },
+
+    "critical_pedagogy": {
+      "label": "Critical Pedagogy & Student Engagement",
+      "code": "CP",
+      "definition": "Educational philosophy that helps students question and challenge oppression embedded in dominant beliefs and practices, develop critical consciousness, promote social transformation, and actively engage in their learning",
+      "weight": 0.30,
+
+      "theoretical_foundation": {
+        "core_literature": [
+          {
+            "citation": "Freire, P. (1970). Pedagogy of the oppressed. Continuum.",
+            "key_contribution": "Education is political not neutral; rejects 'banking education' for problem-posing approach; develops conscientização (critical consciousness) through dialogue and praxis (reflection + action)"
+          },
+          {
+            "citation": "hooks, b. (1994). Teaching to transgress: Education as the practice of freedom. Routledge.",
+            "key_contribution": "Education as liberation practice; engaged pedagogy valuing whole persons; challenges intersectional oppressions; creates safe spaces for transgression and transformation"
+          },
+          {
+            "citation": "Giroux, H. A. (2011). On critical pedagogy. Continuum.",
+            "key_contribution": "Schools as sites of ideological struggle; teachers as transformative intellectuals; border pedagogy crossing boundaries; cultural politics and democratic education"
+          }
+        ]
+      },
+
+      "indicators": [
+        {
+          "code": "CP_01",
+          "name": "Power Structure Analysis",
+          "definition": "Explicitly examines how power, privilege, and oppression operate in society across dimensions of race, class, gender, ability, etc.",
+          "source": "Freire (1970), hooks (1994), Giroux (2011)",
+          "assessment_question": "Does the lesson enable students to identify and analyze systems of power, privilege, and oppression?",
+          "examples": {
+            "high_quality": "Students analyze who holds power in society and why; examine institutional racism, classism, sexism; investigate wealth inequality and its causes; explore how laws and policies advantage some groups",
+            "low_quality": "Presents power as individual rather than systemic; avoids discussing privilege or oppression; naturalizes inequality; no analysis of structural injustice"
+          }
+        },
+        {
+          "code": "CP_02",
+          "name": "Questioning Dominant Narratives",
+          "definition": "Encourages students to critically interrogate 'common sense,' mainstream media, and hegemonic ideologies",
+          "source": "Freire (1970), Giroux (2011)",
+          "assessment_question": "Does the lesson prompt students to question taken-for-granted assumptions and dominant cultural narratives?",
+          "examples": {
+            "high_quality": "Students deconstruct media representations; challenge 'official' historical narratives; question meritocracy myths; analyze whose voices are centered/marginalized; examine ideology in textbooks",
+            "low_quality": "Uncritically accepts mainstream narratives; no questioning of assumptions; presents dominant ideologies as natural/neutral; discourages critical inquiry"
+          }
+        },
+        {
+          "code": "CP_03",
+          "name": "Student Agency and Voice",
+          "definition": "Positions students as knowledge co-constructors with agency, not passive recipients; values student perspectives and experiences",
+          "source": "Freire (1970), hooks (1994)",
+          "assessment_question": "Does the lesson center student voice, experiences, and knowledge-making capacity?",
+          "examples": {
+            "high_quality": "Students generate questions and inquiry topics; share authority in classroom decisions; contribute lived experiences as valid knowledge; co-create assessment criteria; exercise meaningful choices",
+            "low_quality": "Teacher as sole authority; students passively receive predetermined knowledge; no student input on content or process; student experiences dismissed; compliance-oriented"
+          }
+        },
+        {
+          "code": "CP_04",
+          "name": "Dialogic Teaching",
+          "definition": "Employs dialogue as central pedagogical approach with non-hierarchical, reciprocal teacher-student relationships",
+          "source": "Freire (1970)",
+          "assessment_question": "Does the lesson facilitate genuine dialogue where teachers and students learn together rather than one-way transmission?",
+          "examples": {
+            "high_quality": "Open-ended discussions where teacher listens and learns; questions arising from student concerns; collaborative problem-posing; teacher vulnerability and not-knowing; mutual respect",
+            "low_quality": "Teacher monologues; IRE pattern (initiate-respond-evaluate); teacher has all answers; student talk heavily controlled; hierarchical power dynamics unchallenged"
+          }
+        },
+        {
+          "code": "CP_05",
+          "name": "Lived Experience Centering",
+          "definition": "Grounds curriculum in students' real lives, communities, and social realities rather than abstract decontextualized content",
+          "source": "Freire (1970), hooks (1994)",
+          "assessment_question": "Does the lesson connect meaningfully to students' lived experiences and the social issues affecting their communities?",
+          "examples": {
+            "high_quality": "Curriculum emerges from students' life situations; addresses issues students face (e.g., housing insecurity, racism, environmental threats); validates emotional and embodied knowledge; connects personal and political",
+            "low_quality": "Content disconnected from students' lives; abstract academic exercises; ignores students' social realities; decontextualized from community issues; denies relevance of emotion/experience"
+          }
+        },
+        {
+          "code": "CP_06",
+          "name": "Social Justice Orientation",
+          "definition": "Explicitly focuses on equity, justice, human rights, and challenging oppression",
+          "source": "All three theorists",
+          "assessment_question": "Does the lesson have clear social justice aims and enable students to work toward more equitable society?",
+          "examples": {
+            "high_quality": "Explicitly frames learning around justice issues; examines human rights violations; analyzes systemic inequities; explores social movements; imagines more just alternatives",
+            "low_quality": "Avoids justice issues; frames inequality as natural; no engagement with human rights; individualizes social problems; maintains status quo"
+          }
+        },
+        {
+          "code": "CP_07",
+          "name": "Praxis and Action Orientation",
+          "definition": "Connects critical reflection to concrete action for social change; emphasizes transforming conditions, not just understanding them",
+          "source": "Freire (1970), Giroux (2011)",
+          "assessment_question": "Does the lesson support students in taking informed action to address injustice or improve their communities?",
+          "examples": {
+            "high_quality": "Students develop action projects addressing local issues; write letters to decision-makers; organize awareness campaigns; participate in community initiatives; engage in solidarity work",
+            "low_quality": "Purely academic analysis with no action component; discourages student activism; frames change as impossible; separates learning from social engagement"
+          }
+        },
+        {
+          "code": "CP_08",
+          "name": "Critical Reflection and Reflexivity",
+          "definition": "Cultivates ongoing examination of one's own assumptions, biases, positionality, and complicity in systems of oppression",
+          "source": "Freire (1970), hooks (1994)",
+          "assessment_question": "Does the lesson promote students' (and teacher's) critical self-reflection on their own assumptions, privileges, and positions?",
+          "examples": {
+            "high_quality": "Students examine their own socialization and biases; reflect on positionality and privilege; teacher models vulnerability and self-critique; ongoing questioning of assumptions; acknowledges complicity",
+            "low_quality": "No self-reflection; unexamined assumptions; teacher as neutral/objective; students not prompted to examine own biases; critical lens only applied externally"
+          }
+        }
+      ],
+
+      "scoring_rubric": {
+        "5_exceptional": "Sophisticated power analysis; deeply questions dominant narratives; centers student agency and dialogue; grounded in lived experience; explicit justice orientation; connects reflection to action; cultivates critical reflexivity",
+        "4_proficient": "Clear power structure examination; challenges mainstream assumptions; values student voice; dialogic approach; relevant to student lives; social justice focus; includes action component; promotes self-reflection",
+        "3_developing": "Some power analysis; questions some assumptions; attempts student input; some dialogue; connects to experience; addresses justice issues; limited action orientation; minimal reflexivity",
+        "2_emerging": "Superficial power discussion; mostly accepts dominant narratives; limited student voice; mostly teacher-directed; disconnected from lives; mentions justice tangentially; no action; little self-reflection",
+        "1_inadequate": "Ignores power structures; reinforces dominant ideologies; silences students; authoritarian pedagogy; decontextualized; avoids justice issues; purely academic; no critical reflection"
+      }
+    }
+  },
+
+  "composite_scoring": {
+    "method": "weighted_average",
+    "weights": {
+      "place_based_learning": 0.30,
+      "cultural_responsiveness": 0.40,
+      "critical_pedagogy": 0.30
+    },
+    "rationale": "Weights reflect emphasis on culturally responsive place-based pedagogy in New Zealand context. Cultural responsiveness (including Māori perspectives) weighted highest due to Te Tiriti obligations and bicultural commitments. The unified cultural dimension carries additional legal and ethical imperatives in Aotearoa's educational context.",
+    "interpretation_guide": {
+      "4.5_5.0": "Exceptional - Exemplary lesson demonstrating deep integration of all framework dimensions",
+      "3.5_4.4": "Proficient - Strong lesson with clear evidence across most dimensions",
+      "2.5_3.4": "Developing - Adequate lesson with room for growth in several areas",
+      "1.5_2.4": "Emerging - Basic lesson requiring substantial development",
+      "1.0_1.4": "Inadequate - Lesson does not meet framework standards"
+    }
+  },
+
+  "usage_notes": {
+    "intended_users": ["Educational researchers", "Teacher educators", "Curriculum developers", "AI evaluation systems"],
+    "context_specificity": "Framework designed specifically for Aotearoa New Zealand K-12 context; adaptation required for other settings",
+    "limitations": [
+      "Framework emphasizes specific theoretical traditions; other valid perspectives exist",
+      "Scoring involves interpretation; inter-rater agreement recommended",
+      "Cultural competence required to evaluate cultural responsiveness dimension accurately, particularly Māori perspectives",
+      "Framework assumes lesson plans contain sufficient detail for evaluation"
+    ],
+    "version_history": {
+      "v1.0": "Initial framework with four separate dimensions",
+      "v2.0": "Unified cultural_responsiveness and maori_perspectives into single dimension to eliminate redundancy while maintaining comprehensive coverage"
+    },
+    "citation": "When using this framework, please cite: Shu, G. (2025). Culturally Responsive Place-Based Lesson Plan Evaluation Framework (v2.0). University of Auckland. [Thesis citation to be added upon publication]"
+  }
+}

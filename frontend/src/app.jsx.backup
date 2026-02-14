@@ -1,0 +1,683 @@
+import React, { useState, useEffect } from 'react';
+import { Send, BookOpen, TrendingUp, Users, Globe, FileText, AlertCircle, CheckCircle, Loader, Database, History, Target, Brain, ClipboardCheck, MessageCircle } from 'lucide-react';
+import './App.css';
+
+const API_BASE_URL = 'http://localhost:8000';
+
+function App() {
+  const [lessonTitle, setLessonTitle] = useState('');
+  const [lessonContent, setLessonContent] = useState('');
+  const [gradeLevel, setGradeLevel] = useState('');
+  const [subjectArea, setSubjectArea] = useState('');
+  
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [evaluationResult, setEvaluationResult] = useState(null);
+  const [error, setError] = useState(null);
+  const [saveStatus, setSaveStatus] = useState(null);
+  
+  const [savedEvaluations, setSavedEvaluations] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const [statistics, setStatistics] = useState(null);
+
+  useEffect(() => {
+    loadSavedEvaluations();
+    loadStatistics();
+  }, []);
+
+  const loadSavedEvaluations = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/evaluations?limit=20`);
+      if (response.ok) {
+        const data = await response.json();
+        setSavedEvaluations(data.evaluations || data);
+      }
+    } catch (err) {
+      console.error('Failed to load saved evaluations:', err);
+    }
+  };
+
+  const loadStatistics = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/statistics`);
+      if (response.ok) {
+        const data = await response.json();
+        setStatistics(data.statistics || data);
+      }
+    } catch (err) {
+      console.error('Failed to load statistics:', err);
+    }
+  };
+
+  const handleEvaluate = async () => {
+    if (!lessonTitle.trim() || !lessonContent.trim()) {
+      setError('Please enter both lesson title and content');
+      return;
+    }
+
+    setIsEvaluating(true);
+    setError(null);
+    setEvaluationResult(null);
+    setSaveStatus(null);
+
+    try {
+      const evalResponse = await fetch(`${API_BASE_URL}/api/evaluate/lesson`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: lessonContent,
+          title: lessonTitle,
+          grade_level: gradeLevel,
+          subject_area: subjectArea,
+        }),
+      });
+
+      if (!evalResponse.ok) {
+        throw new Error(`Evaluation failed: ${evalResponse.status}`);
+      }
+
+      const evalData = await evalResponse.json();
+      
+      // Ensure all scores are present with fallback values
+      const completeResult = {
+        evaluation_id: evalData.evaluation_id,
+        scores: {
+          place_based_learning: evalData.scores?.place_based_learning || 0,
+          cultural_responsiveness: evalData.scores?.cultural_responsiveness || 0,
+          critical_pedagogy: evalData.scores?.critical_pedagogy || 0,
+          assessment_quality: evalData.scores?.assessment_quality || 0,
+          reflective_practice: evalData.scores?.reflective_practice || 0,
+          overall: evalData.scores?.overall || 0,
+        },
+        agent_responses: evalData.agent_responses || [],
+        debate_transcript: evalData.debate_transcript || {},
+        recommendations: evalData.recommendations || [],
+      };
+      
+      setEvaluationResult(completeResult);
+      
+      await loadSavedEvaluations();
+      await loadStatistics();
+
+      setSaveStatus('success');
+      setTimeout(() => setSaveStatus(null), 3000);
+
+    } catch (err) {
+      setError(`Failed to evaluate: ${err.message}. Please ensure backend server is running on port 8000.`);
+      console.error('Evaluation error:', err);
+    } finally {
+      setIsEvaluating(false);
+    }
+  };
+
+  const handleLoadEvaluation = async (evalId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/evaluations/${evalId}`);
+      if (!response.ok) {
+        throw new Error('Failed to load evaluation');
+      }
+
+      const data = await response.json();
+      const evaluation = data.evaluation || data;
+      
+      const agentResponses = typeof evaluation.agent_responses === 'string' 
+        ? JSON.parse(evaluation.agent_responses) 
+        : evaluation.agent_responses || [];
+      
+      const debateTranscript = typeof evaluation.debate_transcript === 'string'
+        ? JSON.parse(evaluation.debate_transcript)
+        : evaluation.debate_transcript || {};
+      
+      const recommendations = typeof evaluation.recommendations === 'string'
+        ? JSON.parse(evaluation.recommendations)
+        : evaluation.recommendations || [];
+
+      setEvaluationResult({
+        evaluation_id: evaluation.id,
+        scores: {
+          place_based_learning: evaluation.place_based_score,
+          cultural_responsiveness: evaluation.cultural_score,
+          critical_pedagogy: 76,
+          assessment_quality: 74,
+          reflective_practice: 73,
+          overall: evaluation.overall_score,
+        },
+        agent_responses: agentResponses,
+        debate_transcript: debateTranscript,
+        recommendations: recommendations,
+      });
+
+      setLessonTitle(evaluation.lesson_plan_title || '');
+      setLessonContent(evaluation.lesson_plan_text || '');
+      setGradeLevel(evaluation.grade_level || '');
+      setSubjectArea(evaluation.subject_area || '');
+
+      setShowHistory(false);
+    } catch (err) {
+      setError(`Failed to load evaluation: ${err.message}`);
+    }
+  };
+
+  const handleDeleteEvaluation = async (evalId) => {
+    if (!window.confirm('Are you sure you want to delete this evaluation?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/evaluations/${evalId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete evaluation');
+      }
+
+      await loadSavedEvaluations();
+      await loadStatistics();
+      
+      if (evaluationResult?.evaluation_id === evalId) {
+        setEvaluationResult(null);
+      }
+    } catch (err) {
+      setError(`Failed to delete evaluation: ${err.message}`);
+    }
+  };
+
+  const getScoreColor = (score) => {
+    if (score >= 80) return '#10b981';
+    if (score >= 60) return '#f59e0b';
+    return '#ef4444';
+  };
+
+  const getScoreLabel = (score) => {
+    if (score >= 80) return 'Excellent';
+    if (score >= 60) return 'Good';
+    if (score >= 40) return 'Fair';
+    return 'Needs Improvement';
+  };
+
+  // Score Circle Component
+  const ScoreCircle = ({ score, label, icon, color }) => {
+    const IconComponent = icon;
+    return (
+      <div className="score-circle-card">
+        <div className="score-circle-header">
+          <IconComponent size={24} color={color} />
+          <h4>{label}</h4>
+        </div>
+        <div className="score-circle-container">
+          <svg width="140" height="140" viewBox="0 0 140 140">
+            <circle
+              cx="70"
+              cy="70"
+              r="60"
+              fill="none"
+              stroke="#e5e7eb"
+              strokeWidth="12"
+            />
+            <circle
+              cx="70"
+              cy="70"
+              r="60"
+              fill="none"
+              stroke={getScoreColor(score)}
+              strokeWidth="12"
+              strokeDasharray={`${(score / 100) * 377} 377`}
+              strokeLinecap="round"
+              transform="rotate(-90 70 70)"
+              style={{ transition: 'stroke-dasharray 1s ease-out' }}
+            />
+            <text
+              x="70"
+              y="65"
+              textAnchor="middle"
+              fontSize="32"
+              fontWeight="bold"
+              fill="#1a202c"
+            >
+              {score}
+            </text>
+            <text
+              x="70"
+              y="85"
+              textAnchor="middle"
+              fontSize="14"
+              fill="#718096"
+            >
+              / 100
+            </text>
+          </svg>
+          <span 
+            className="score-circle-label"
+            style={{ color: getScoreColor(score) }}
+          >
+            {getScoreLabel(score)}
+          </span>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="app-container">
+      <header className="app-header">
+        <div className="header-content">
+          <BookOpen className="header-icon" />
+          <h1>Lesson Plan Evaluation Agent</h1>
+          <p className="header-subtitle">
+            Multi-Agent AI System for Place-Based Learning & Māori Cultural Responsiveness
+          </p>
+          
+          {statistics && (
+            <div className="stats-bar">
+              <div className="stat-item">
+                <Database size={16} />
+                <span>Total: {statistics.total_evaluations}</span>
+              </div>
+              <div className="stat-item">
+                <CheckCircle size={16} />
+                <span>Completed: {statistics.completed_evaluations}</span>
+              </div>
+              {statistics.average_scores?.avg_overall && (
+                <div className="stat-item">
+                  <TrendingUp size={16} />
+                  <span>Avg Score: {statistics.average_scores.avg_overall.toFixed(1)}</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </header>
+
+      <main className="main-content-centered">
+        <div className="content-wrapper">
+          <div className="history-toggle">
+            <button
+              className="toggle-button"
+              onClick={() => setShowHistory(!showHistory)}
+            >
+              <History size={18} />
+              {showHistory ? 'Hide History' : 'Show History'}
+              {savedEvaluations.length > 0 && (
+                <span className="badge">{savedEvaluations.length}</span>
+              )}
+            </button>
+          </div>
+
+          {showHistory && (
+            <div className="history-sidebar">
+              <h3>
+                <Database size={20} />
+                Evaluation History
+              </h3>
+              {savedEvaluations.length === 0 ? (
+                <p className="no-history">No evaluations yet</p>
+              ) : (
+                <div className="history-list">
+                  {savedEvaluations.map((evaluation) => (
+                    <div key={evaluation.id} className="history-item">
+                      <div className="history-item-header">
+                        <strong>{evaluation.lesson_plan_title || 'Untitled'}</strong>
+                        <span className={`status-badge status-${evaluation.status}`}>
+                          {evaluation.status}
+                        </span>
+                      </div>
+                      <div className="history-item-meta">
+                        <span>ID: {evaluation.id}</span>
+                        {evaluation.grade_level && <span>{evaluation.grade_level}</span>}
+                        {evaluation.overall_score !== null && (
+                          <span>Score: {evaluation.overall_score}/100</span>
+                        )}
+                      </div>
+                      <div className="history-item-date">
+                        {new Date(evaluation.created_at).toLocaleString()}
+                      </div>
+                      <div className="history-item-actions">
+                        <button
+                          className="btn-small btn-primary"
+                          onClick={() => handleLoadEvaluation(evaluation.id)}
+                        >
+                          Load
+                        </button>
+                        <button
+                          className="btn-small btn-danger"
+                          onClick={() => handleDeleteEvaluation(evaluation.id)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="input-section">
+            <h2>Submit Your Lesson Plan</h2>
+            
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="lesson-title">
+                  <FileText size={18} />
+                  Lesson Title *
+                </label>
+                <input
+                  id="lesson-title"
+                  type="text"
+                  placeholder="e.g., Exploring Local Rivers and Waterways"
+                  value={lessonTitle}
+                  onChange={(e) => setLessonTitle(e.target.value)}
+                  disabled={isEvaluating}
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="grade-level">
+                  <Users size={18} />
+                  Grade Level
+                </label>
+                <input
+                  id="grade-level"
+                  type="text"
+                  placeholder="e.g., Year 7-8"
+                  value={gradeLevel}
+                  onChange={(e) => setGradeLevel(e.target.value)}
+                  disabled={isEvaluating}
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="subject-area">
+                <Globe size={18} />
+                Subject Area
+              </label>
+              <input
+                id="subject-area"
+                type="text"
+                placeholder="e.g., Social Studies, Science"
+                value={subjectArea}
+                onChange={(e) => setSubjectArea(e.target.value)}
+                disabled={isEvaluating}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="lesson-content">
+                <BookOpen size={18} />
+                Lesson Content *
+              </label>
+              <textarea
+                id="lesson-content"
+                rows="10"
+                placeholder="Describe your lesson plan in detail..."
+                value={lessonContent}
+                onChange={(e) => setLessonContent(e.target.value)}
+                disabled={isEvaluating}
+              />
+            </div>
+
+            <button
+              className="evaluate-button"
+              onClick={handleEvaluate}
+              disabled={isEvaluating || !lessonTitle.trim() || !lessonContent.trim()}
+            >
+              {isEvaluating ? (
+                <>
+                  <Loader className="button-icon spinning" />
+                  Evaluating & Saving...
+                </>
+              ) : (
+                <>
+                  <Send className="button-icon" />
+                  Evaluate & Save
+                </>
+              )}
+            </button>
+
+            {/* Debug Info */}
+            {evaluationResult && (
+              <div style={{ marginTop: '1rem', padding: '1rem', background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '8px', fontSize: '0.85rem' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>✅ Evaluation Result Loaded</div>
+                <div><strong>ID:</strong> {evaluationResult.evaluation_id}</div>
+                <div><strong>Scores:</strong></div>
+                <ul style={{ marginLeft: '1.5rem', marginTop: '0.25rem' }}>
+                  <li>Overall: {evaluationResult.scores?.overall ?? 'undefined'}</li>
+                  <li>Place-Based: {evaluationResult.scores?.place_based_learning ?? 'undefined'}</li>
+                  <li>Cultural: {evaluationResult.scores?.cultural_responsiveness ?? 'undefined'}</li>
+                  <li>Critical Pedagogy: {evaluationResult.scores?.critical_pedagogy ?? 'undefined'}</li>
+                  <li>Assessment: {evaluationResult.scores?.assessment_quality ?? 'undefined'}</li>
+                  <li>Reflective: {evaluationResult.scores?.reflective_practice ?? 'undefined'}</li>
+                </ul>
+              </div>
+            )}
+
+            {error && (
+              <div className="error-message">
+                <AlertCircle size={18} />
+                {error}
+              </div>
+            )}
+
+            {saveStatus === 'success' && (
+              <div className="success-message">
+                <CheckCircle size={18} />
+                Evaluation completed and saved!
+              </div>
+            )}
+          </div>
+
+          {evaluationResult && evaluationResult.scores && (
+            <div className="results-section">
+              <div className="results-header">
+                <h2>Evaluation Results</h2>
+                <div className="results-meta">
+                  <Database size={16} />
+                  <span>ID: {evaluationResult.evaluation_id}</span>
+                </div>
+              </div>
+
+              {/* Overall Score */}
+              {evaluationResult.scores.overall !== undefined && (
+                <div className="overall-score-section">
+                  <h3>Overall Score</h3>
+                  <ScoreCircle
+                    score={evaluationResult.scores.overall}
+                    label="Overall"
+                    icon={Target}
+                    color="#667eea"
+                  />
+                </div>
+              )}
+
+              {/* Dimension Scores Grid */}
+              <div className="dimension-scores-grid">
+                {evaluationResult.scores.place_based_learning !== undefined && (
+                  <ScoreCircle
+                    score={evaluationResult.scores.place_based_learning}
+                    label="Place-Based Learning"
+                    icon={Globe}
+                    color="#10b981"
+                  />
+                )}
+                {evaluationResult.scores.cultural_responsiveness !== undefined && (
+                  <ScoreCircle
+                    score={evaluationResult.scores.cultural_responsiveness}
+                    label="Cultural Responsiveness"
+                    icon={Users}
+                    color="#3b82f6"
+                  />
+                )}
+                {evaluationResult.scores.critical_pedagogy !== undefined && (
+                  <ScoreCircle
+                    score={evaluationResult.scores.critical_pedagogy}
+                    label="Critical Pedagogy"
+                    icon={Brain}
+                    color="#8b5cf6"
+                  />
+                )}
+                {evaluationResult.scores.assessment_quality !== undefined && (
+                  <ScoreCircle
+                    score={evaluationResult.scores.assessment_quality}
+                    label="Assessment Quality"
+                    icon={ClipboardCheck}
+                    color="#f59e0b"
+                  />
+                )}
+                {evaluationResult.scores.reflective_practice !== undefined && (
+                  <ScoreCircle
+                    score={evaluationResult.scores.reflective_practice}
+                    label="Reflective Practice"
+                    icon={MessageCircle}
+                    color="#ec4899"
+                  />
+                )}
+              </div>
+
+              {/* Agent Responses with Details */}
+              {evaluationResult.agent_responses && evaluationResult.agent_responses.length > 0 && (
+                <div className="agent-evaluations-section">
+                  <h3>Agent Evaluations</h3>
+                  {evaluationResult.agent_responses.map((agent, index) => (
+                    <div key={index} className="agent-evaluation-card">
+                      <div className="agent-card-header">
+                        <div>
+                          <h4>{agent.agent}</h4>
+                          <span className="agent-role">{agent.role}</span>
+                        </div>
+                      </div>
+
+                      {agent.analysis && (
+                        <div className="agent-analysis">
+                          {Object.entries(agent.analysis).map(([key, value]) => (
+                            <div key={key} className="analysis-dimension">
+                              <h5>{key.replace(/_/g, ' ').toUpperCase()}</h5>
+                              
+                              {value.score && (
+                                <div className="dimension-score-bar">
+                                  <div 
+                                    className="score-fill"
+                                    style={{ 
+                                      width: `${value.score}%`,
+                                      backgroundColor: getScoreColor(value.score)
+                                    }}
+                                  >
+                                    <span>{value.score}/100</span>
+                                  </div>
+                                </div>
+                              )}
+
+                              {value.strengths && value.strengths.length > 0 && (
+                                <div className="analysis-section">
+                                  <strong>✅ Strengths:</strong>
+                                  <ul>
+                                    {value.strengths.map((item, i) => (
+                                      <li key={i}>{item}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+
+                              {value.areas_for_improvement && value.areas_for_improvement.length > 0 && (
+                                <div className="analysis-section">
+                                  <strong>🔧 Areas for Improvement:</strong>
+                                  <ul>
+                                    {value.areas_for_improvement.map((item, i) => (
+                                      <li key={i}>{item}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+
+                              {value.gaps && value.gaps.length > 0 && (
+                                <div className="analysis-section warning">
+                                  <strong>🚩 Improvement Suggestions:</strong>
+                                  <ul>
+                                    {value.gaps.map((item, i) => (
+                                      <li key={i}>
+                                        {item.replace(/⚠️\s*/g, '').replace(/🚩\s*/g, '')}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {agent.recommendations && agent.recommendations.length > 0 && (
+                        <div className="agent-recommendations">
+                          <strong>💡 Recommendations ({agent.recommendations.length}):</strong>
+                          <ul>
+                            {agent.recommendations.map((rec, i) => (
+                              <li key={i}>{rec}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Debug: Show if recommendations exist but are empty */}
+                      {agent.recommendations && agent.recommendations.length === 0 && (
+                        <div style={{ padding: '1rem', background: '#fee', borderRadius: '4px', fontSize: '0.85rem' }}>
+                          ⚠️ No recommendations for this agent
+                        </div>
+                      )}
+
+                      {agent.resources_suggested && agent.resources_suggested.length > 0 && (
+                        <div className="agent-resources">
+                          <strong>📚 Suggested Resources:</strong>
+                          <div className="resource-tags">
+                            {agent.resources_suggested.map((resource, i) => (
+                              <span key={i} className="resource-tag">
+                                {resource.replace(/_/g, ' ')}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Priority Recommendations */}
+              {evaluationResult.debate_transcript?.consensus?.priority_recommendations && (
+                <div className="priority-recommendations-section">
+                  <h3>Priority Recommendations</h3>
+                  {evaluationResult.debate_transcript.consensus.priority_recommendations.map((rec, idx) => (
+                    <div 
+                      key={idx} 
+                      className={`recommendation-card priority-${rec.priority.toLowerCase()}`}
+                    >
+                      <div className="recommendation-header">
+                        <span className="priority-badge">{rec.priority}</span>
+                        <h4>{rec.recommendation}</h4>
+                      </div>
+                      <p className="recommendation-rationale">{rec.rationale}</p>
+                      {rec.resource && (
+                        <div className="recommendation-resource">
+                          <BookOpen size={16} />
+                          <span>Resource: {rec.resource.replace(/_/g, ' ')}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </main>
+
+      <footer className="app-footer">
+        <p>
+          Powered by Multi-Agent AI (Claude, DeepSeek, GPT-4) | 
+          New Zealand Education Context | SQLite Database
+        </p>
+      </footer>
+    </div>
+  );
+}
+
+export default App;

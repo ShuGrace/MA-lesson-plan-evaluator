@@ -1,0 +1,928 @@
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, File
+from fastapi.middleware.cors import CORSMiddleware
+from app.db.database import Database, init_database
+from typing import List, Optional
+from pydantic import BaseModel
+import traceback
+from contextlib import asynccontextmanager
+from io import BytesIO
+import re
+
+# 文件处理库
+try:
+    import docx
+    DOCX_AVAILABLE = True
+except ImportError:
+    DOCX_AVAILABLE = False
+    print("⚠️  python-docx not installed. Word file support disabled.")
+
+try:
+    import PyPDF2
+    PDF_AVAILABLE = True
+except ImportError:
+    PDF_AVAILABLE = False
+    print("⚠️  PyPDF2 not installed. PDF file support disabled.")
+
+# Import config and LLMClient
+from app.config import API_MODE
+from app.services.llm_client import LLMClient
+
+# ==========================================
+# Lifespan handler (startup/shutdown)
+# ==========================================
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    try:
+        init_database(reset=False)
+        print("✅ Database initialized successfully")
+    except Exception as e:
+        print(f"⚠️  Database initialization warning: {e}")
+    yield
+    # Shutdown
+    print("👋 Application shutdown")
+
+app = FastAPI(title="Lesson Plan Evaluator API", lifespan=lifespan)
+
+# CORS configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ==========================================
+# Pydantic Models
+# ==========================================
+class EvaluationCreate(BaseModel):
+    lesson_plan_text: str
+    lesson_plan_title: Optional[str] = None
+    grade_level: Optional[str] = None
+    subject_area: Optional[str] = None
+
+class EvaluationUpdate(BaseModel):
+    place_based_score: Optional[int] = None
+    cultural_score: Optional[int] = None
+    overall_score: Optional[int] = None
+    status: Optional[str] = None
+    agent_responses: Optional[List[dict]] = None
+    debate_transcript: Optional[dict] = None
+    recommendations: Optional[List[str]] = None
+
+class ImproveLessonRequest(BaseModel):
+    original_lesson: str
+    lesson_title: str
+    grade_level: Optional[str] = None
+    subject_area: Optional[str] = None
+    recommendations: List[str]
+    scores: dict
+
+# ==========================================
+# Database Dependency
+# ==========================================
+def get_db():
+    db = Database()
+    db.connect()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# ==========================================
+# Root Endpoint
+# ==========================================
+@app.get("/")
+async def root():
+    return {
+        "message": "Lesson Plan Evaluator API",
+        "mode": API_MODE,
+        "database": "connected",
+        "status": "operational",
+        "features": {
+            "file_upload": {
+                "word": DOCX_AVAILABLE,
+                "pdf": PDF_AVAILABLE
+            }
+        }
+    }
+
+# ==========================================
+# 新功能1: 文件文本提取端点
+# ==========================================
+@app.post("/api/extract-text")
+async def extract_text_from_file(file: UploadFile = File(...)):
+    """
+    从上传的 Word 或 PDF 文件中提取文本
+    """
+    try:
+        content = await file.read()
+        text = ""
+        title = ""
+        
+        if file.filename.endswith('.docx'):
+            if not DOCX_AVAILABLE:
+                raise HTTPException(status_code=501, detail="Word file support not installed. Please install python-docx: pip install python-docx")
+            
+            # 处理 Word 文件
+            doc = docx.Document(BytesIO(content))
+            paragraphs = [p.text for p in doc.paragraphs if p.text.strip()]
+            text = '\n\n'.join(paragraphs)
+            
+            # 提取标题（第一个非空段落）
+            if paragraphs:
+                title = paragraphs[0][:100]  # 限制标题长度
+            
+        elif file.filename.endswith('.pdf'):
+            if not PDF_AVAILABLE:
+                raise HTTPException(status_code=501, detail="PDF file support not installed. Please install PyPDF2: pip install PyPDF2")
+            
+            # 处理 PDF 文件
+            pdf_reader = PyPDF2.PdfReader(BytesIO(content))
+            pages_text = []
+            for page in pdf_reader.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    pages_text.append(page_text)
+            text = '\n\n'.join(pages_text)
+            
+            # 提取标题（文件名或第一行）
+            title = file.filename.replace('.pdf', '')
+            if text:
+                first_line = text.split('\n')[0][:100]
+                if first_line:
+                    title = first_line
+            
+        elif file.filename.endswith('.doc'):
+            # 旧版Word格式不支持
+            raise HTTPException(status_code=400, detail="旧版 .doc 格式不支持，请转换为 .docx 格式")
+        else:
+            raise HTTPException(status_code=400, detail="不支持的文件格式，只支持 .docx 和 .pdf")
+        
+        if not text.strip():
+            raise HTTPException(status_code=400, detail="无法从文件中提取文本内容")
+        
+        return {
+            "status": "success",
+            "text": text,
+            "metadata": {
+                "title": title,
+                "filename": file.filename,
+                "length": len(text),
+                "word_count": len(text.split())
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error extracting text: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"文件处理失败: {str(e)}")
+
+# ==========================================
+# 新功能2: AI改进教案生成端点
+# ==========================================
+llm_client = LLMClient()
+
+@app.post("/api/improve-lesson")
+async def improve_lesson(request: ImproveLessonRequest):
+    """
+    根据评估建议生成改进版教案
+    """
+    try:
+        # 清理建议列表，移除emoji和重复项
+        cleaned_recommendations = []
+        for rec in request.recommendations:
+            # 移除emoji和特殊字符
+            cleaned = re.sub(r'[⚠️🚩]', '', rec).strip()
+            if cleaned and cleaned not in cleaned_recommendations:
+                cleaned_recommendations.append(cleaned)
+        
+        # 构建详细的评分信息
+        scores_text = f"""
+Evaluation Scores:
+- Overall Score: {request.scores.get('overall', 0)}/100
+- Place-Based Learning: {request.scores.get('place_based_learning', 0)}/100
+- Cultural Responsiveness: {request.scores.get('cultural_responsiveness', 0)}/100
+- Critical Pedagogy: {request.scores.get('critical_pedagogy', 0)}/100
+- Assessment Quality: {request.scores.get('assessment_quality', 0)}/100
+- Reflective Practice: {request.scores.get('reflective_practice', 0)}/100
+"""
+        
+        # 构建提示词
+        prompt = f"""You are a senior education expert specializing in New Zealand education. Please generate an improved complete lesson plan based on the evaluation results and improvement suggestions below.
+
+【Original Lesson Information】
+Title: {request.lesson_title}
+Grade Level: {request.grade_level or 'Not specified'}
+Subject: {request.subject_area or 'Not specified'}
+
+【Original Lesson Plan Content】
+{request.original_lesson}
+
+【Evaluation Results】
+{scores_text}
+
+【Improvement Suggestions】 (Total: {len(cleaned_recommendations)} items)
+{chr(10).join(f"{i+1}. {rec}" for i, rec in enumerate(cleaned_recommendations))}
+
+【Task Requirements】
+Please directly generate a fully improved lesson plan that meets the following requirements:
+
+1. **Retain Core Strengths**: Maintain the high-scoring aspects of the original lesson plan (such as place-based learning, cultural responsiveness, etc.)
+2. **Targeted Improvements**: Focus on optimizing lower-scoring dimensions (such as critical pedagogy, assessment quality, reflective practice)
+3. **Integrate All Suggestions**: Systematically incorporate all the improvement suggestions above
+4. **New Zealand Education Context**:
+   - Reflect Te Whāriki and New Zealand Curriculum principles
+   - Integrate Māori cultural elements and te reo Māori
+   - Emphasize whanaungatanga (relationships) and manaakitanga (care)
+
+【Required Format】
+Your lesson plan must follow this exact structure:
+
+**1. Learning Objectives**
+
+1.1 Knowledge: Students will understand…
+1.2 Skills: Students will be able to…
+1.3 Attitudes/Values: Students will appreciate…
+
+**2. Learner Analysis**
+
+2.1 Student Background:
+2.1.1 Prior knowledge or skills related to the topic:
+2.1.2 Possible interests or connections to the topic:
+2.1.3 Anticipated challenges or difficulties:
+2.2 Learner Characteristics:
+2.2.1 Learning styles:
+2.2.2 Special needs or accommodations:
+
+**3. Key Points of Focus**
+
+3.1 Teaching Focus (Key Concepts):
+3.2 Challenges (Potential Difficulties):
+
+**4. Teaching Methods and Strategies**
+
+4.1 Methods (Inquiry-based learning, project-based learning, direct instruction, collaborative learning, etc.):
+4.2 Strategies (Group discussions, hands-on activities, case studies, role-playing, or use of multimedia...):
+
+**5. Preparation**
+
+5.1 Teacher Preparation (Resources, materials, or tools needed for the lesson, e.g., slides, videos, worksheets):
+5.2 Student Preparation (Pre-class activities, assigned readings, or preparatory tasks):
+
+**6. Lesson Procedure**
+
+For each stage, provide detailed processes and activities in paragraph format:
+
+Stage 1: Introduction (X minutes)
+Describe the opening activities, how to engage students, and set the context for learning. Include specific questions, stories, or scenarios to hook student interest.
+
+Stage 2: Main Teaching (X minutes)
+Explain how new concepts or skills will be taught. Include specific examples, demonstrations, and guided practice activities. Describe the teaching sequence and key explanations.
+
+Stage 3: Activities (X minutes)
+Describe student activities in detail. Explain group work arrangements, hands-on tasks, problem-solving activities, and how students will apply their learning. Include differentiation strategies.
+
+Stage 4: Conclusion (X minutes)
+Explain how the lesson will be wrapped up. Include summary activities, reflection questions, and how students will consolidate their learning.
+
+Stage 5: Extension (X minutes or ongoing)
+Describe follow-up activities, homework, or further exploration tasks that extend learning beyond the classroom.
+
+For each stage, write 1-4 detailed paragraphs describing:
+- The main teaching processes and activities
+- What the teacher will do
+- What students will do
+- Key questions or prompts to use
+- Transitions between activities
+
+**7. Assessment**
+
+7.1 Formative Assessment (Methods to evaluate learning during the lesson, e.g., questioning, observation, quizzes):
+7.2 Summative Assessment (Tools to assess learning after the lesson, e.g., homework, projects, tests):
+7.3 Feedback Mechanisms (How feedback will be provided to students to support improvement):
+
+**8. Resources and Tools**
+
+8.1 Materials Needed (Textbooks, handouts, worksheets, slides, videos, etc.):
+8.2 Technology and Tools (Projector, computers, online tools, or any specific software):
+
+**IMPORTANT: 
+- Generate the entire lesson plan in English
+- Follow the structure above exactly
+- Ensure the lesson plan is practical and can be directly used by teachers
+- Make sure all improvement suggestions are integrated naturally into the appropriate sections**
+
+Begin generating the improved lesson plan:
+"""
+        
+        # 调用 Claude API 生成改进版教案
+        if API_MODE == "mock":
+            # Mock 模式返回示例
+            improved_lesson = f"""# {request.lesson_title} - Improved Version
+
+**1. Learning Objectives**
+
+1.1 Knowledge: Students will understand the root causes of environmental issues in their local community and the historical context of water pollution in New Zealand waterways.
+1.2 Skills: Students will be able to conduct critical analysis using WHO, WHY, WHAT framework; collect and analyze water quality data; collaborate effectively in teams; present findings to community stakeholders.
+1.3 Attitudes/Values: Students will appreciate the importance of kaitiakitanga (guardianship) in environmental stewardship; develop empathy for affected communities; value evidence-based decision making.
+
+**2. Learner Analysis**
+
+2.1 Student Background:
+2.1.1 Prior knowledge or skills related to the topic: Basic understanding of ecosystems from previous science units; familiarity with local waterways; some exposure to Māori environmental concepts.
+2.1.2 Possible interests or connections to the topic: Many students live near affected waterways; some have whānau involved in environmental initiatives; strong interest in outdoor activities.
+2.1.3 Anticipated challenges or difficulties: Complex scientific concepts; understanding systemic issues; connecting local issues to broader power structures.
+
+2.2 Learner Characteristics:
+2.2.1 Learning styles: Mix of visual, kinesthetic, and collaborative learners; preference for hands-on activities; strong oral tradition in Māori learners.
+2.2.2 Special needs or accommodations: Two students with dyslexia (provide visual aids and audio recordings); one ELL student (buddy system and vocabulary support); differentiated activities for varied ability levels.
+
+**3. Key Points of Focus**
+
+3.1 Teaching Focus (Key Concepts):
+- Critical analysis framework (WHO is affected, WHY problems exist, WHAT can be done)
+- Kaitiakitanga and environmental responsibility
+- Scientific method and data collection
+- Power dynamics in environmental decision-making
+- Community-based solutions
+
+3.2 Challenges (Potential Difficulties):
+- Understanding abstract concepts of power and justice
+- Connecting individual actions to systemic change
+- Managing emotions when discussing environmental degradation
+- Balancing cultural sensitivity with critical analysis
+
+**4. Teaching Methods and Strategies**
+
+4.1 Methods: Inquiry-based learning, project-based learning, place-based education, collaborative learning, culturally responsive pedagogy.
+4.2 Strategies: Tuakana-Teina peer support, critical questioning scaffolds, field investigations, community partnerships, reflective journaling, wānanga (learning circles), hands-on water testing, multimedia presentations.
+
+**5. Preparation**
+
+5.1 Teacher Preparation:
+- Contact kaumātua and arrange marae visit (Week 1)
+- Prepare water testing kits and safety equipment
+- Create critical thinking scaffold templates
+- Develop assessment rubric with cultural criteria
+- Arrange community expert visits
+- Set up weekly learning journal template (200+ words)
+- Prepare Tuakana-Teina peer feedback protocols
+
+5.2 Student Preparation:
+- Pre-reading: "Our Water, Our Future" article
+- Family interview: Ask whānau about local waterway memories
+- Bring photos of local water bodies
+- Research one local environmental organization
+
+**6. Lesson Procedure**
+
+Stage 1: Introduction (30 minutes)
+
+The lesson begins with a karakia (Māori prayer) to establish a culturally responsive learning environment and acknowledge the spiritual significance of water in Māori culture. Following the karakia, the teacher facilitates a mihi whakatau (welcome) where students are invited to share whānau (family) stories about local waterways. This creates personal connections to the topic and values students' cultural knowledge.
+
+The teacher then shows a 10-minute video about Awa Tupua, the legal recognition of the Whanganui River as having the rights of a person. After the video, the teacher facilitates a critical discussion using the question: "WHO decides about our water?" This introduces the critical analysis framework that will be central to the unit. Students share initial thoughts in pairs before whole-class discussion. The teacher records key ideas on chart paper, grouping them into categories: local community, iwi/hapū, regional councils, government, and private interests.
+
+Stage 2: Main Teaching (45 minutes)
+
+The teacher introduces the WHO-WHY-WHAT critical analysis framework, explaining each component with clear examples. Using a local waterway pollution case study, the teacher models the framework: WHO is affected (local iwi, recreational users, wildlife), WHY it exists (historical industrial activity, lack of regulation, economic pressures), and WHAT can be done (community advocacy, policy change, restoration projects). The teacher emphasizes that this framework helps us move beyond surface-level understanding to identify root causes and power dynamics.
+
+Following this, the teacher provides historical context about water management in New Zealand, including traditional Māori practices of kaitiakitanga (guardianship), the impact of colonization on water rights, and current legislative frameworks. This 15-minute overview uses a timeline visual and specific examples relevant to the local area. The teacher then demonstrates proper water testing procedures using the kits students will use in the field. Each testing method (pH, turbidity, temperature, dissolved oxygen) is explained with its significance for ecosystem health. Students practice on prepared samples at their desks, with the teacher circulating to provide guidance and answer questions.
+
+Stage 3: Activities (90 minutes)
+
+Students form Tuakana-Teina (older-younger sibling) pairs, mixing experienced and less experienced learners to provide peer support. Each pair is given a field investigation kit including water testing equipment, safety gear, data recording sheets, and the critical analysis framework template. The class walks to the local waterway (15 minutes), during which the teacher reinforces safety protocols and encourages students to make initial observations about the environment.
+
+At the waterway, pairs select specific testing sites along a 200-meter stretch. They collect water samples and conduct tests, recording results systematically. The teacher and a parent volunteer supervise, asking guiding questions and ensuring proper technique. Simultaneously, students take photos, sketch the surrounding environment, and note human activities or infrastructure that might impact water quality.
+
+After data collection (45 minutes), groups of 4-6 students (2-3 pairs) gather to apply the critical analysis framework. They use large poster paper divided into three sections (WHO, WHY, WHAT) to organize their thinking. The teacher provides scaffolding questions: "WHO uses this waterway? WHO might be causing impacts? WHY is the water quality what it is? WHY might some groups have more say in management decisions? WHAT evidence do we have? WHAT actions could improve the situation?" Students discuss, debate, and synthesize their observations and data. The teacher circulates, asking probing questions that push students beyond surface-level analysis toward understanding systemic issues and power structures.
+
+Stage 4: Conclusion (30 minutes)
+
+Back in the classroom, each group presents their initial findings using a think-pair-share structure. First, individuals in each group reflect on what surprised them (2 minutes individual thinking). Then pairs share with each other (3 minutes). Finally, each group nominates a spokesperson to share with the whole class (15 minutes total, about 3 minutes per group). The teacher captures key insights on the board, highlighting patterns across groups and noting areas where further investigation is needed.
+
+The teacher then facilitates a collective reflection using questions: "What surprised you today? What questions do you still have? How did the water quality compare to your expectations? What connections can you make to our earlier discussion about Awa Tupua and water rights?" Students respond, building on each other's ideas. The teacher concludes by framing these reflections as the beginning of their ongoing investigation, not the end.
+
+Students then begin their first weekly learning journal entry (minimum 200 words), which they will complete for homework. The teacher provides a structured template with prompts: "What did I learn today? What challenged my thinking? How does this connect to my own experiences with water? What do I want to investigate further?" This reflective practice helps students develop metacognitive skills and track their learning journey throughout the unit.
+
+Stage 5: Extension (Ongoing)
+
+For homework, students complete their learning journal entry, ensuring they write at least 200 words of thoughtful reflection. They should include specific observations from the field investigation and connections to the critical analysis framework. Students are also assigned independent research: find one example of successful community-led environmental action in New Zealand. They should identify what made it successful and how it relates to the WHO-WHY-WHAT framework. Students can use online resources, interview family or community members, or consult library materials.
+
+Additionally, students prepare questions for next week's visit with local kaumātua (elders). These questions should relate to traditional knowledge about water, changes they've observed over their lifetime, and their perspectives on current water management. The teacher encourages students to think about respectful ways to ask questions and the importance of listening to mātauranga Māori (Māori knowledge). Students record these questions in their learning journals and will share them with the class before the kaumātua visit to ensure cultural appropriateness and avoid duplication.
+
+This extension work reinforces the day's learning while building connections to the community and preparing for upcoming activities. It emphasizes that learning extends beyond the classroom and values both scientific and Indigenous knowledge systems.
+
+**7. Assessment**
+
+7.1 Formative Assessment:
+- Observation during field work (use checklist: engagement, safety, data collection skills)
+- Review of learning journals weekly (reflection depth, critical thinking)
+- Tuakana-Teina peer feedback sessions (Weeks 2, 4, 5)
+- Question-response during discussions
+- Exit tickets: "One thing I learned, one question I have"
+
+7.2 Summative Assessment:
+- Final community presentation (25%): clarity, evidence use, cultural responsiveness
+- Written report with critical analysis (30%): WHO-WHY-WHAT framework application
+- Learning journal portfolio (20%): consistent reflection, growth mindset
+- Peer assessment using Tuakana-Teina protocol (15%): constructive feedback, support
+- Action plan for ongoing community involvement (10%): feasibility, commitment
+
+Detailed Rubric:
+- Critical Analysis (30%): Identifies root causes, power structures, and stakeholders
+- Cultural Responsiveness (20%): Demonstrates tikanga Māori, uses te reo appropriately
+- Collaboration (15%): Effective teamwork, supports others
+- Communication (20%): Clear presentation, appropriate for audience
+- Action Orientation (15%): Proposes viable solutions, shows commitment
+
+7.3 Feedback Mechanisms:
+- Weekly written feedback on learning journals
+- Peer feedback through Tuakana-Teina protocol (structured forms)
+- Mid-project check-in with each group (formative feedback)
+- Rubric shared at project start with exemplars
+- Community partners provide authentic feedback
+- Self-assessment reflection at project end
+
+**8. Resources and Tools**
+
+8.1 Materials Needed:
+- "Our Water, Our Future" article (class set)
+- Water testing kits (pH, turbidity, temperature)
+- Safety equipment (gloves, boots)
+- Learning journal templates
+- Critical analysis framework worksheets
+- Assessment rubric with cultural criteria
+- Tuakana-Teina peer feedback forms
+- Poster boards and markers for presentations
+- Cameras/tablets for documenting field work
+
+8.2 Technology and Tools:
+- Projector for video and presentations
+- Tablets/computers for research and data entry
+- Google Classroom for learning journals
+- Water quality data logging app
+- Video recording equipment for community presentation
+- Access to local environmental data websites
+
+(This is a mock mode example response following the required format)
+"""
+        else:
+            # 实际调用 Claude API (强制使用Claude生成教案)
+            improved_lesson = await llm_client.call("claude", prompt)
+        
+        return {
+            "status": "success",
+            "improved_lesson": improved_lesson,
+            "original_title": request.lesson_title,
+            "recommendations_applied": len(cleaned_recommendations)
+        }
+        
+    except Exception as e:
+        print(f"Error generating improved lesson: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"生成改进版教案失败: {str(e)}")
+
+# ==========================================
+# 新功能3: 转换为Word文档端点
+# ==========================================
+class ConvertToWordRequest(BaseModel):
+    content: str
+    filename: str
+
+@app.post("/api/convert-to-word")
+async def convert_to_word(request: ConvertToWordRequest):
+    """
+    将Markdown文本转换为Word文档
+    """
+    try:
+        if not DOCX_AVAILABLE:
+            raise HTTPException(status_code=501, detail="Word conversion not available. Install python-docx.")
+        
+        from fastapi.responses import StreamingResponse
+        
+        # 创建Word文档
+        doc = docx.Document()
+        
+        # 添加标题
+        doc.add_heading('Improved Lesson Plan', 0)
+        
+        # 解析内容并添加到文档
+        lines = request.content.split('\n')
+        current_table = None
+        in_table = False
+        skip_next = False
+        
+        for i, line in enumerate(lines):
+            if skip_next:
+                skip_next = False
+                continue
+                
+            line = line.strip()
+            
+            if not line:
+                in_table = False
+                current_table = None
+                continue
+            
+            # 检查是否是表格分隔符
+            if '|' in line and '---' in line:
+                skip_next = False
+                continue
+            
+            # 检测表格（必须有多个|并且不是Markdown链接）
+            if line.count('|') >= 3 and not line.startswith('[') and '---' not in line:
+                cells = [cell.strip() for cell in line.split('|')[1:-1]]
+                
+                # 验证是否真的是表格（检查下一行是否有分隔符）
+                is_real_table = False
+                if i + 1 < len(lines):
+                    next_line = lines[i + 1].strip()
+                    if '|' in next_line and '---' in next_line:
+                        is_real_table = True
+                        skip_next = True
+                
+                if is_real_table and not in_table:
+                    # 创建新表格
+                    in_table = True
+                    current_table = doc.add_table(rows=1, cols=len(cells))
+                    current_table.style = 'Light Grid Accent 1'
+                    
+                    # 添加表头
+                    hdr_cells = current_table.rows[0].cells
+                    for j, header in enumerate(cells):
+                        hdr_cells[j].text = header
+                        for paragraph in hdr_cells[j].paragraphs:
+                            for run in paragraph.runs:
+                                run.font.bold = True
+                
+                elif in_table and current_table:
+                    # 添加表格行
+                    row_cells = current_table.add_row().cells
+                    for j, cell_text in enumerate(cells):
+                        if j < len(row_cells):
+                            row_cells[j].text = cell_text
+                else:
+                    # 不是真正的表格，作为普通段落处理
+                    in_table = False
+                    doc.add_paragraph(line)
+            
+            else:
+                # 非表格内容
+                in_table = False
+                current_table = None
+                
+                # 检测标题级别
+                if line.startswith('# '):
+                    doc.add_heading(line[2:], level=1)
+                elif line.startswith('## '):
+                    doc.add_heading(line[3:], level=2)
+                elif line.startswith('### '):
+                    doc.add_heading(line[4:], level=3)
+                elif line.startswith('**') and line.endswith('**'):
+                    # 粗体段落
+                    p = doc.add_paragraph()
+                    p.add_run(line.strip('**')).bold = True
+                elif line.startswith('- ') or line.startswith('* '):
+                    # 列表项
+                    doc.add_paragraph(line[2:], style='List Bullet')
+                elif line.startswith(tuple(str(i) + '.' for i in range(10))):
+                    # 数字列表
+                    doc.add_paragraph(line, style='List Number')
+                else:
+                    # 普通段落
+                    doc.add_paragraph(line)
+        
+        # 保存到BytesIO
+        file_stream = BytesIO()
+        doc.save(file_stream)
+        file_stream.seek(0)
+        
+        # 返回文件
+        return StreamingResponse(
+            file_stream,
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            headers={"Content-Disposition": f"attachment; filename={request.filename}"}
+        )
+        
+    except Exception as e:
+        print(f"Error converting to Word: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Word conversion failed: {str(e)}")
+
+# ==========================================
+# CRUD Endpoints (保持原有功能)
+# ==========================================
+@app.post("/api/evaluations", response_model=dict)
+async def create_evaluation_record(evaluation: EvaluationCreate, db: Database = Depends(get_db)):
+    try:
+        eval_id = db.create_evaluation(
+            lesson_plan_text=evaluation.lesson_plan_text,
+            lesson_plan_title=evaluation.lesson_plan_title,
+            grade_level=evaluation.grade_level,
+            subject_area=evaluation.subject_area,
+            api_mode=API_MODE
+        )
+        return {"status": "success", "evaluation_id": eval_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create evaluation: {str(e)}")
+
+@app.get("/api/evaluations")
+async def get_all_evaluations(limit: int = 50, status: Optional[str] = None, db: Database = Depends(get_db)):
+    try:
+        if status:
+            evals = db.get_evaluations_by_status(status)
+        else:
+            evals = db.get_all_evaluations(limit=limit)
+        return {
+            "status": "success",
+            "evaluations": evals,
+            "count": len(evals)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve evaluations: {str(e)}")
+
+@app.get("/api/evaluations/{evaluation_id}")
+async def get_evaluation_by_id(evaluation_id: int, db: Database = Depends(get_db)):
+    evaluation = db.get_evaluation(evaluation_id)
+    if not evaluation:
+        raise HTTPException(status_code=404, detail="Evaluation not found")
+    return {
+        "status": "success",
+        "evaluation": evaluation
+    }
+
+@app.put("/api/evaluations/{evaluation_id}", response_model=dict)
+async def update_evaluation(evaluation_id: int, update_data: EvaluationUpdate, db: Database = Depends(get_db)):
+    evaluation = db.get_evaluation(evaluation_id)
+    if not evaluation:
+        raise HTTPException(status_code=404, detail="Evaluation not found")
+
+    if all([update_data.place_based_score, update_data.cultural_score, update_data.overall_score]):
+        db.update_evaluation_scores(
+            eval_id=evaluation_id,
+            place_based_score=update_data.place_based_score,
+            cultural_score=update_data.cultural_score,
+            overall_score=update_data.overall_score
+        )
+
+    if update_data.agent_responses or update_data.debate_transcript or update_data.recommendations:
+        db.update_evaluation_results(
+            eval_id=evaluation_id,
+            agent_responses=update_data.agent_responses or [],
+            debate_transcript=update_data.debate_transcript or {},
+            recommendations=update_data.recommendations or [],
+            status=update_data.status or "completed"
+        )
+
+    if update_data.status and not any([update_data.agent_responses, update_data.debate_transcript, update_data.recommendations]):
+        db.update_evaluation_status(evaluation_id, update_data.status)
+
+    return {"status": "success", "evaluation_id": evaluation_id}
+
+@app.delete("/api/evaluations/{evaluation_id}", response_model=dict)
+async def delete_evaluation_record(evaluation_id: int, db: Database = Depends(get_db)):
+    evaluation = db.get_evaluation(evaluation_id)
+    if not evaluation:
+        raise HTTPException(status_code=404, detail="Evaluation not found")
+    db.delete_evaluation(evaluation_id)
+    return {"status": "success", "message": "Evaluation deleted successfully"}
+
+@app.get("/api/statistics")
+async def get_statistics(db: Database = Depends(get_db)):
+    try:
+        stats = db.get_statistics()
+        return {
+            "status": "success",
+            "statistics": stats
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve statistics: {str(e)}")
+
+# ==========================================
+# Evaluation Endpoint (保持原有功能)
+# ==========================================
+@app.post("/api/evaluate/lesson")
+async def evaluate_lesson(lesson_plan: dict, db: Database = Depends(get_db)):
+    """
+    Main evaluation endpoint - returns scores and agent evaluations
+    """
+    text = lesson_plan.get("text", "")
+    
+    print(f"📝 Evaluating lesson plan: {lesson_plan.get('title', 'Untitled')}")
+
+    if API_MODE == "mock":
+        # Mock scores with realistic values
+        place_based_score = 84
+        cultural_score = 82
+        critical_pedagogy_score = 76
+        assessment_quality_score = 74
+        reflective_practice_score = 73
+        overall_score = 82
+
+        agent_responses = [
+            {
+                "agent": "DeepSeek", 
+                "role": "Place-Based Learning & Pedagogical Design Expert", 
+                "model": "deepseek-chat",
+                "timestamp": "2024-01-15T10:30:00Z",
+                "analysis": {
+                    "place_based_learning": {
+                        "score": 84,
+                        "strengths": [
+                            "Strong integration of local waterways as learning context",
+                            "Meaningful connections to Awa Tupua (river rights) legislation",
+                            "Authentic community partnerships with local kaumātua and iwi"
+                        ],
+                        "areas_for_improvement": [
+                            "Could expand on historical land use patterns",
+                            "Limited connection to students' own neighborhoods",
+                            "Recommend adding student-led inquiry components",
+                            "Consider long-term community partnership sustainability plan"
+                        ]
+                    },
+                    "pedagogical_design": {
+                        "score": 82,
+                        "comment": "Solid instructional design with clear learning progression and scaffolding"
+                    }
+                },
+                "recommendations": [
+                    "Add explicit interdisciplinary connections mapped to curriculum standards",
+                    "Design scaffolded inquiry questions for different ability levels",
+                    "Include extension activities for advanced learners",
+                    "Create community partnership sustainability plan"
+                ]
+            },
+            {
+                "agent": "Claude", 
+                "role": "Cultural Responsiveness & Indigenous Education Expert", 
+                "model": "claude-sonnet-4-5",
+                "timestamp": "2024-01-15T10:30:05Z",
+                "analysis": {
+                    "cultural_responsiveness": {
+                        "score": 82,
+                        "strengths": [
+                            "Good use of te reo Māori throughout the lesson",
+                            "Demonstrates respect for tikanga Māori protocols",
+                            "Includes consultation with local kaumātua",
+                            "Shows understanding of kaitiakitanga (guardianship) principles"
+                        ],
+                        "areas_for_improvement": [
+                            "Could deepen understanding of mauri (life force) concept",
+                            "Add more explicit cultural safety protocols",
+                            "Recommend earlier consultation with mana whenua in planning stage"
+                        ],
+                        "cultural_elements_present": [
+                            "Te reo Māori vocabulary",
+                            "Whakapapa (genealogy) connections",
+                            "Karakia (prayer/incantation)",
+                            "Whanaungatanga (relationships)"
+                        ]
+                    }
+                },
+                "recommendations": [
+                    "Invite kaitiaki (guardians) to co-teach specific sessions",
+                    "Create a cultural protocol checklist for field visits",
+                    "Incorporate more whakataukī (proverbs) relevant to water",
+                    "Develop formal relationship with local marae before project begins"
+                ],
+                "resources_suggested": ["peer_feedback_protocol"]
+            },
+            {
+                "agent": "GPT-4", 
+                "role": "Critical Pedagogy, Assessment & Reflective Practice Expert", 
+                "model": "gpt-4-turbo",
+                "timestamp": "2024-01-15T10:30:10Z",
+                "analysis": {
+                    "critical_pedagogy": {
+                        "score": 76,
+                        "strengths": [
+                            "Encourages student-led inquiry",
+                            "Addresses real community environmental issues",
+                            "Promotes student agency in problem-solving"
+                        ],
+                        "gaps": [
+                            "MISSING: Critical analysis of root causes (WHY problems exist)",
+                            "MISSING: Power/justice analysis (WHO is affected, WHO decides)",
+                            "MISSING: Action-oriented component (students as change agents)",
+                            "MISSING: Scaffolding for critical questioning"
+                        ]
+                    },
+                    "assessment_quality": {
+                        "score": 74,
+                        "strengths": [
+                            "Includes authentic audience (community presentation)",
+                            "Multiple assessment formats mentioned"
+                        ],
+                        "gaps": [
+                            "CRITICAL: Missing detailed assessment rubric",
+                            "MISSING: Clear success criteria",
+                            "MISSING: Differentiated assessment options",
+                            "MISSING: Self-assessment component"
+                        ]
+                    },
+                    "reflective_practice": {
+                        "score": 73,
+                        "strengths": [
+                            "Includes final reflection component"
+                        ],
+                        "gaps": [
+                            "CRITICAL: No weekly learning journal structure",
+                            "MISSING: Ongoing reflection checkpoints throughout project",
+                            "MISSING: Peer feedback protocol (Tuakana-Teina model)",
+                            "MISSING: Metacognitive reflection prompts"
+                        ]
+                    }
+                },
+                "recommendations": [
+                    "Add critical thinking scaffolds: 'WHO benefits? WHY is this happening? What historical factors?'",
+                    "Develop detailed assessment rubric using provided template",
+                    "Implement weekly learning journal with structured prompts (200+ words)",
+                    "Establish Tuakana-Teina peer feedback protocol at Weeks 2, 4, 5",
+                    "Include student action plan for ongoing community impact"
+                ],
+                "resources_suggested": ["assessment_rubric", "learning_journal", "peer_feedback_protocol"]
+            }
+        ]
+        
+        recommendations = [
+            "Strengthen collaboration with kaumātua and local iwi",
+            "Implement detailed assessment rubric with cultural criteria",
+            "Add structured learning journal with weekly reflections", 
+            "Establish Tuakana-Teina peer feedback protocol",
+            "Include critical thinking scaffolds (WHO, WHY, WHAT analysis)"
+        ]
+        
+    else:
+        # Real API calls
+        print("🤖 Calling real LLM APIs...")
+        ds_content = await llm_client.call("deepseek", f"Evaluate place-based learning in: {text}")
+        cl_content = await llm_client.call("claude", f"Evaluate cultural responsiveness in: {text}")
+        cg_content = await llm_client.call("chatgpt", f"Provide overall evaluation and recommendations for: {text}")
+
+        # TODO: Parse actual scores from LLM responses
+        place_based_score = 85
+        cultural_score = 80
+        critical_pedagogy_score = 76
+        assessment_quality_score = 74
+        reflective_practice_score = 73
+        overall_score = 82
+
+        agent_responses = [
+            {"agent": "DeepSeek", "role": "Place-Based Learning Expert", "content": ds_content, "score": place_based_score},
+            {"agent": "Claude", "role": "Cultural Responsiveness Specialist", "content": cl_content, "score": cultural_score},
+            {"agent": "GPT-4", "role": "Critical Pedagogy Facilitator", "content": cg_content, "score": critical_pedagogy_score}
+        ]
+        
+        recommendations = [
+            "Strengthen community partnerships", 
+            "Increase te reo Māori integration",
+            "Add structured reflection components"
+        ]
+
+    # Create evaluation in database
+    eval_id = db.create_evaluation(
+        lesson_plan_text=text,
+        lesson_plan_title=lesson_plan.get("title", "Untitled Lesson Plan"),
+        grade_level=lesson_plan.get("grade_level", ""),
+        subject_area=lesson_plan.get("subject_area", ""),
+        api_mode=API_MODE
+    )
+
+    # Update with scores
+    db.update_evaluation_scores(
+        eval_id=eval_id,
+        place_based_score=place_based_score,
+        cultural_score=cultural_score,
+        overall_score=overall_score
+    )
+
+    # Update with results
+    db.update_evaluation_results(
+        eval_id=eval_id,
+        agent_responses=agent_responses, 
+        debate_transcript={}, 
+        recommendations=recommendations, 
+        status="completed"
+    )
+
+    print(f"✅ Evaluation completed: ID {eval_id}, Overall Score: {overall_score}")
+
+    # Return complete response with ALL scores
+    return {
+        "status": "success",
+        "evaluation_id": eval_id,
+        "scores": {
+            "place_based_learning": place_based_score,
+            "cultural_responsiveness": cultural_score,
+            "critical_pedagogy": critical_pedagogy_score,
+            "assessment_quality": assessment_quality_score,
+            "reflective_practice": reflective_practice_score,
+            "overall": overall_score
+        },
+        "agent_responses": agent_responses,
+        "recommendations": recommendations,
+        "mode": API_MODE
+    }

@@ -1,0 +1,1542 @@
+
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, File
+from fastapi.middleware.cors import CORSMiddleware
+from app.db.database import Database, init_database
+from typing import List, Optional
+from pydantic import BaseModel
+import traceback
+from contextlib import asynccontextmanager
+from io import BytesIO
+import json
+import time
+import asyncio
+from functools import wraps
+
+import logging
+import re
+
+# 设置详细日志
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger("uvicorn")
+
+# 性能监控装饰器
+def timing_decorator(func):
+    @wraps(func)
+    async def wrapper(*args, **kwargs):
+        start_time = time.time()
+        try:
+            result = await func(*args, **kwargs)
+            end_time = time.time()
+            print(f"⏱️ {func.__name__} executed in {end_time - start_time:.2f} seconds")
+            return result
+        except Exception as e:
+            end_time = time.time()
+            print(f"⏱️ {func.__name__} failed after {end_time - start_time:.2f} seconds: {e}")
+            raise
+    return wrapper
+
+# 分数进度条颜色辅助函数
+def score_color(score: Optional[int]) -> str:
+    if score is None:
+        return "grey"
+    try:
+        return "red" if score < 60 else "orange" if score < 80 else "green"
+    except Exception:
+        return "grey"
+
+# 文件处理库
+try:
+    import docx
+    DOCX_AVAILABLE = True
+except ImportError:
+    DOCX_AVAILABLE = False
+    print("⚠️ python-docx not installed")
+
+try:
+    import PyPDF2
+    PDF_AVAILABLE = True
+except ImportError:
+    PDF_AVAILABLE = False
+    print("⚠️ PyPDF2 not installed")
+
+from app.config import API_MODE
+from app.services.llm_client import LLMClient
+
+# 新增：导入理论框架加载器 ⭐
+from app.services.framework_loader import get_framework_loader
+
+# 新增：导入评估辅助函数 ⭐
+from app.utils.evaluation_helpers import (
+    extract_score_from_response,
+    extract_recommendations_from_response,
+    parse_json_response,
+    calculate_weighted_score,
+    merge_and_deduplicate_recommendations
+)
+
+# ✅ 新增：导入 API 控制配置
+from app.config import (
+    ENABLE_DEEPSEEK, 
+    ENABLE_CLAUDE, 
+    ENABLE_GPT,
+    API_TIMEOUT,
+    API_MAX_RETRIES,
+    API_RETRY_DELAY
+)
+
+# 初始化框架加载器 ⭐
+framework_loader = get_framework_loader()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    应用生命周期管理
+    注意：移除了可能阻塞的初始化代码
+    """
+    try:
+        print("🚀 Starting application...")
+        
+        # 数据库初始化（快速，不会阻塞）
+        init_database(reset=False)
+        print("✅ Database initialized successfully")
+        
+        # ⚠️ 框架加载移到后台，不阻塞启动
+        # 框架会在第一次使用时自动加载
+        print("ℹ️  Framework will be loaded on first use")
+        
+    except Exception as e:
+        print(f"⚠️ Initialization warning: {e}")
+        import traceback
+        traceback.print_exc()
+    
+    yield  # 应用开始接受请求
+    
+    print("👋 Application shutdown")
+
+app = FastAPI(title="Lesson Plan Evaluator API", lifespan=lifespan)
+
+# 修复CORS配置
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",  # 本地开发
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=3600,
+)
+
+
+# -------- Models --------
+class EvaluationCreate(BaseModel):
+    lesson_plan_text: str
+    lesson_plan_title: Optional[str] = None
+    grade_level: Optional[str] = None
+    subject_area: Optional[str] = None
+
+class EvaluationUpdate(BaseModel):
+    place_based_score: Optional[int] = None
+    cultural_score: Optional[int] = None
+    overall_score: Optional[int] = None
+    status: Optional[str] = None
+    agent_responses: Optional[List[dict]] = None
+    debate_transcript: Optional[dict] = None
+    recommendations: Optional[List[str]] = None
+
+class ImproveLessonRequest(BaseModel):
+    original_lesson: str
+    lesson_title: str
+    grade_level: Optional[str] = None
+    subject_area: Optional[str] = None
+    recommendations: List[str]
+    scores: dict
+    remove_numbering: Optional[bool] = False
+
+def get_db():
+    db = Database()
+    db.connect()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# -------- 文件处理函数 --------
+def extract_text_from_docx(file_bytes: bytes) -> str:
+    """从DOCX文件提取文本"""
+    if not DOCX_AVAILABLE:
+        raise HTTPException(status_code=501, detail="DOCX support not available")
+    
+    try:
+        doc = docx.Document(BytesIO(file_bytes))
+        text = "\n".join([para.text for para in doc.paragraphs if para.text.strip()])
+        return text
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to read DOCX: {str(e)}")
+
+def extract_text_from_pdf(file_bytes: bytes) -> str:
+    """从PDF文件提取文本"""
+    if not PDF_AVAILABLE:
+        raise HTTPException(status_code=501, detail="PDF support not available")
+    
+    try:
+        pdf_reader = PyPDF2.PdfReader(BytesIO(file_bytes))
+        text = ""
+        for page in pdf_reader.pages:
+            text += page.extract_text() + "\n"
+        return text.strip()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to read PDF: {str(e)}")
+
+# -------- Lesson Plan Template --------
+
+LESSON_PLAN_TEMPLATE = """
+**1. Learning Objectives**
+1.1 Knowledge: {knowledge}
+1.2 Skills: {skills}
+1.3 Attitudes/Values: {values}
+
+**2. Learner Analysis**
+2.1 Student Background:
+2.1.1 Prior knowledge or skills related to the topic: {prior_knowledge}
+2.1.2 Possible interests or connections to the topic: {interests}
+2.1.3 Anticipated challenges or difficulties: {challenges}
+2.2 Learner Characteristics:
+2.2.1 Learning styles: {learning_styles}
+2.2.2 Special needs or accommodations: {accommodations}
+
+**3. Key Points of Focus**
+3.1 Teaching Focus (Key Concepts): {key_concepts}
+3.2 Challenges (Potential Difficulties): {focus_challenges}
+
+**4. Teaching Methods and Strategies**
+4.1 Methods: {methods}
+4.2 Strategies: {strategies}
+
+**5. Preparation**
+5.1 Teacher Preparation: {teacher_prep}
+5.2 Student Preparation: {student_prep}
+
+**6. Lesson Procedure**
+
+6.1 Introduction ({intro_duration}mins)：
+- Key Tasks: {intro_tasks}
+- Teacher Actions: {intro_teacher_actions}
+- Student Activities: {intro_student_activities}
+
+6.2 Main Teaching ({main_duration}mins)：
+- Key Tasks: {main_tasks}
+- Teacher Actions: {main_teacher_actions}
+- Student Activities: {main_student_activities}
+
+6.3 Investigation & Exploration ({investigation_duration}mins):
+- Key Tasks: {investigation_tasks}
+- Teacher Actions: {investigation_teacher_actions}
+- Student Activities: {investigation_student_activities}
+
+6.4 Conclusion ({conclusion_duration}mins):
+- Key Tasks: {conclusion_tasks}
+- Teacher Actions: {conclusion_teacher_actions}
+- Student Activities: {conclusion_student_activities}
+
+6.5 Extension ({extension_duration}mins):
+- Key Tasks: {extension_tasks}
+- Teacher Actions: {extension_teacher_actions}
+- Student Activities: {extension_student_activities}
+
+**7. Assessment**
+7.1 Formative Assessment: {formative}
+7.2 Summative Assessment: {summative}
+7.3 Feedback Mechanisms: {feedback}
+
+**8. Resources and Tools**
+8.1 Materials Needed: {materials}
+8.2 Technology and Tools: {tech_tools}
+
+**Cultural Disclaimers and Acknowledgment of Limitations:**
+This AI-generated lesson plan requires your review and adaptation before use. Please consult with local iwi and cultural advisors for Māori content. AI systems lack cultural understanding and lived experience—critically evaluate all content for cultural appropriateness and te reo Māori accuracy. You retain full responsibility for ensuring this lesson suits your teaching context and respects local protocols.
+"""
+
+def generate_lesson_plan_from_fields(fields: dict) -> str:
+    """根据字段生成教案"""
+    try:
+        return LESSON_PLAN_TEMPLATE.format(**fields)
+    except KeyError as e:
+        print(f"⚠️ Missing field in template: {e}")
+        # 使用默认值填充缺失字段
+        default_fields = {
+            "knowledge": "Students will develop comprehensive understanding.",
+            "skills": "Students will develop critical thinking skills.",
+            "values": "Students will appreciate diverse perspectives.",
+            "prior_knowledge": "Students bring varied experiences.",
+            "interests": "Connecting to student interests.",
+            "challenges": "Addressing diverse learning needs.",
+            "learning_styles": "Accommodating diverse learning preferences.",
+            "accommodations": "Providing appropriate supports.",
+            "key_concepts": "Core concepts aligned with curriculum.",
+            "focus_challenges": "Key learning challenges to address.",
+            "methods": "Place-based and inquiry-based learning.",
+            "strategies": "Evidence-based instructional strategies.",
+            "teacher_prep": "Required teacher preparations.",
+            "student_prep": "Student preparations.",
+            "intro_duration": "20",
+            "intro_tasks": "Activate prior knowledge.",
+            "intro_teacher_actions": "Facilitate discussion.",
+            "intro_student_activities": "Share prior knowledge.",
+            "main_duration": "40",
+            "main_tasks": "Introduce core concepts.",
+            "main_teacher_actions": "Present content with scaffolding.",
+            "main_student_activities": "Take notes and practice.",
+            "investigation_duration": "45",
+            "investigation_tasks": "Apply learning through investigation.",
+            "investigation_teacher_actions": "Facilitate group work.",
+            "investigation_student_activities": "Conduct investigations.",
+            "conclusion_duration": "15",
+            "conclusion_tasks": "Synthesize learning.",
+            "conclusion_teacher_actions": "Guide reflection.",
+            "conclusion_student_activities": "Share insights.",
+            "extension_duration": "Ongoing",
+            "extension_tasks": "Extend learning beyond classroom.",
+            "extension_teacher_actions": "Provide additional resources.",
+            "extension_student_activities": "Complete independent research.",
+            "formative": "Ongoing observation and feedback.",
+            "summative": "Final assessment of learning outcomes.",
+            "feedback": "Regular constructive feedback.",
+            "materials": "Required teaching materials.",
+            "tech_tools": "Technology tools and resources."
+        }
+        # 合并用户提供的字段和默认字段
+        merged_fields = {**default_fields, **fields}
+        return LESSON_PLAN_TEMPLATE.format(**merged_fields)
+
+
+# -------- API 端点 --------
+
+@app.get("/")
+async def root():
+    """API根路径 - 显示系统状态和理论框架信息"""
+    framework = framework_loader.load_theoretical_framework()
+    agent_design = framework_loader.load_agent_design()
+    
+    return {
+        "message": "Lesson Plan Evaluator API with Theoretical Framework",
+        "mode": API_MODE,
+        "database": "connected",
+        "status": "operational",
+        "theoretical_framework": {
+            "name": framework.get('framework_metadata', {}).get('name', 'Default'),
+            "version": framework.get('framework_metadata', {}).get('version', '1.0'),
+            "dimensions": list(framework.get('dimensions', {}).keys()),
+            "agents_configured": len(agent_design.get('agents', {}))
+        },
+        "features": {
+            "file_upload": {
+                "word": DOCX_AVAILABLE,
+                "pdf": PDF_AVAILABLE
+            }
+        },
+        # ✅ 新增：显示 API 状态
+        "api_status": {
+            "deepseek": "enabled" if ENABLE_DEEPSEEK else "disabled",
+            "claude": "enabled" if ENABLE_CLAUDE else "disabled",
+            "gpt": "enabled" if ENABLE_GPT else "disabled"
+        }
+    }
+
+
+@app.get("/api/framework")
+async def get_framework_info():
+    """获取理论框架的详细信息"""
+    framework = framework_loader.load_theoretical_framework()
+    agent_design = framework_loader.load_agent_design()
+    weights = framework_loader.get_scoring_weights()
+    
+    dimensions_summary = {}
+    for dim_code, dim_info in framework.get('dimensions', {}).items():
+        dimensions_summary[dim_code] = {
+            "label": dim_info.get('label', ''),
+            "definition": dim_info.get('definition', ''),
+            "indicator_count": len(dim_info.get('indicators', [])),
+            "weight": weights.get(dim_code, 0.0)
+        }
+    
+    agents_summary = {}
+    for agent_id, agent_info in agent_design.get('agents', {}).items():
+        agents_summary[agent_info['name']] = {
+            "role": agent_info.get('role', ''),
+            "dimensions": agent_info.get('assigned_dimensions', [])
+        }
+    
+    return {
+        "status": "success",
+        "framework_metadata": framework.get('framework_metadata', {}),
+        "dimensions": dimensions_summary,
+        "agents": agents_summary,
+        "composite_scoring": {
+            "method": framework.get('composite_scoring', {}).get('method', 'weighted_average'),
+            "weights": weights
+        }
+    }
+
+
+@app.get("/api/framework/dimension/{dimension_code}")
+async def get_dimension_details(dimension_code: str):
+    """获取特定维度的详细指标信息"""
+    framework = framework_loader.load_theoretical_framework()
+    dimensions = framework.get('dimensions', {})
+    
+    if dimension_code not in dimensions:
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Dimension '{dimension_code}' not found"
+        )
+    
+    dimension_info = dimensions[dimension_code]
+    
+    indicators = []
+    for indicator in dimension_info.get('indicators', []):
+        indicators.append({
+            "code": indicator.get('code', ''),
+            "name": indicator.get('name', ''),
+            "definition": indicator.get('definition', ''),
+            "source": indicator.get('source', '')
+        })
+    
+    return {
+        "status": "success",
+        "code": dimension_code,
+        "label": dimension_info.get('label', ''),
+        "definition": dimension_info.get('definition', ''),
+        "theoretical_foundation": dimension_info.get('theoretical_foundation', {}),
+        "indicators": indicators,
+        "scoring_rubric": dimension_info.get('scoring_rubric', {})
+    }
+
+
+@app.post("/api/upload-file")
+async def upload_lesson_plan_file(file: UploadFile = File(...)):
+    """上传DOCX或PDF文件并提取文本"""
+    try:
+        file_bytes = await file.read()
+        
+        if file.filename.endswith('.docx'):
+            text = extract_text_from_docx(file_bytes)
+        elif file.filename.endswith('.pdf'):
+            text = extract_text_from_pdf(file_bytes)
+        else:
+            raise HTTPException(
+                status_code=400, 
+                detail="Unsupported file type. Use .docx or .pdf"
+            )
+        
+        return {
+            "status": "success",
+            "filename": file.filename,
+            "text": text,
+            "length": len(text)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, 
+            detail=f"File processing failed: {str(e)}"
+        )
+
+
+@app.post("/api/extract-text")
+async def extract_text_from_file(file: UploadFile = File(...)):
+    """提取上传文件（PDF、DOCX）中的文本内容"""
+    try:
+        print(f"\n📄 Processing uploaded file: {file.filename}")
+        print(f"📊 Content type: {file.content_type}")
+        
+        file_bytes = await file.read()
+        file_size = len(file_bytes)
+        print(f"📏 File size: {file_size} bytes ({file_size/1024:.1f} KB)")
+        
+        text = ""
+        metadata = {}
+        
+        if file.filename.endswith('.docx') or file.content_type == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+            if not DOCX_AVAILABLE:
+                raise HTTPException(
+                    status_code=500,
+                    detail="DOCX processing not available. Please install python-docx package."
+                )
+            
+            print("📝 Extracting text from DOCX...")
+            text = extract_text_from_docx(file_bytes)
+            
+            try:
+                doc = docx.Document(BytesIO(file_bytes))
+                if doc.paragraphs and doc.paragraphs[0].text.strip():
+                    first_para = doc.paragraphs[0].text.strip()
+                    if len(first_para) < 100 and not first_para.endswith('.'):
+                        metadata['title'] = first_para
+                
+                if hasattr(doc.core_properties, 'title') and doc.core_properties.title:
+                    metadata['title'] = doc.core_properties.title
+            except Exception as e:
+                print(f"⚠️ Could not extract metadata: {e}")
+            
+        elif file.filename.endswith('.pdf') or file.content_type == 'application/pdf':
+            if not PDF_AVAILABLE:
+                raise HTTPException(
+                    status_code=500,
+                    detail="PDF processing not available. Please install PyPDF2 package."
+                )
+            
+            print("📕 Extracting text from PDF...")
+            text = extract_text_from_pdf(file_bytes)
+            
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Unsupported file type. Only PDF and Word (.docx, .doc) files are supported."
+            )
+        
+        if not text or len(text.strip()) < 10:
+            raise HTTPException(
+                status_code=400,
+                detail="Could not extract sufficient text from file. File may be empty or corrupted."
+            )
+        
+        print(f"✅ Successfully extracted {len(text)} characters")
+        print(f"📄 Preview: {text[:200]}...")
+        
+        return {
+            "status": "success",
+            "filename": file.filename,
+            "text": text.strip(),
+            "length": len(text),
+            "metadata": metadata
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ File extraction error: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(
+            status_code=500,
+            detail=f"File processing failed: {str(e)}"
+        )
+
+
+@app.get("/api/health")
+async def health_check():
+    """健康检查端点"""
+    return {
+        "status": "ok", 
+        "message": "Service is healthy",
+        "framework_loaded": framework_loader._framework is not None,
+        # ✅ 新增：显示 API 配置
+        "api_config": {
+            "deepseek_enabled": ENABLE_DEEPSEEK,
+            "claude_enabled": ENABLE_CLAUDE,
+            "gpt_enabled": ENABLE_GPT,
+            "timeout": API_TIMEOUT,
+            "max_retries": API_MAX_RETRIES,
+            "retry_delay": API_RETRY_DELAY
+        }
+    }
+
+
+def build_analysis_structure(
+    dimension_key,
+    score,
+    response_text,
+    recommendations=None,
+    strengths=None,
+    gaps=None,
+    cultural_elements=None
+):
+    """构建前端期望的 analysis 结构"""
+    return {
+        dimension_key: {
+            "score": score,
+            "response_text": response_text or "",
+            "strengths": strengths or [],
+            "areas_for_improvement": recommendations or [],
+            "gaps": gaps or [],
+            "recommendations": recommendations or [],
+            "cultural_elements_present": cultural_elements or [],
+            "summary": (response_text[:500] if response_text else "")
+        }
+    }
+
+
+@app.post("/api/evaluate")
+@app.post("/api/evaluate/lesson")
+@timing_decorator
+async def evaluate_lesson_plan(
+    request: EvaluationCreate, 
+    db: Database = Depends(get_db)
+):
+    """评估教案 - 使用理论框架和结构化prompts - ✅ 增强版"""
+    print(f"\n{'='*60}")
+    print(f"📝 New Evaluation Request (Framework-based)")
+    print(f"{'='*60}")
+    
+    text = request.lesson_plan_text.strip()
+    title = request.lesson_plan_title or "Untitled Lesson Plan"
+    grade_level = request.grade_level
+    subject_area = request.subject_area
+    
+    if not text:
+        raise HTTPException(status_code=400, detail="Lesson plan text cannot be empty")
+    
+    print(f"📄 Title: {title}")
+    print(f"📊 Grade: {grade_level}, Subject: {subject_area}")
+    print(f"📏 Length: {len(text)} characters")
+    
+    llm_client = LLMClient()
+    
+    print("\n🔧 Loading framework-based prompts...")
+    deepseek_prompt_template = framework_loader.load_prompt('deepseek')
+    claude_prompt_template = framework_loader.load_prompt('claude')
+    gpt_prompt_template = framework_loader.load_prompt('gpt')
+    
+    agent_responses = []
+    place_based_score = 0
+    cultural_score = 0
+    maori_score = 0 
+    critical_pedagogy_score = 0
+    assessment_quality_score = 0
+    reflective_practice_score = 0
+    overall_score = 0
+    lesson_plan_text = ""
+    recommendations = []
+    eval_id = None
+    
+    if API_MODE == "real":
+        print("\n🤖 Using REAL API mode with framework prompts")
+        print(f"   Active APIs: DeepSeek={ENABLE_DEEPSEEK}, Claude={ENABLE_CLAUDE}, GPT={ENABLE_GPT}")
+        print(f"   Config: Timeout={API_TIMEOUT}s, Retries={API_MAX_RETRIES}, Delay={API_RETRY_DELAY}s")
+        print("="*60)
+        
+        try:
+            # ==========================================
+            # AGENT 1: DeepSeek - Place-based Learning
+            # ✅ 增强版：支持开关和重试
+            # ==========================================
+            if ENABLE_DEEPSEEK:
+                print("\n🔵 Agent 1: DeepSeek (Place-based Learning Specialist)")
+                print("-" * 60)
+                
+                deepseek_full_prompt = deepseek_prompt_template.replace("{lesson_plan_text}", text)
+                print(f"📝 Using framework prompt ({len(deepseek_full_prompt)} chars)")
+                
+                deepseek_start = time.time()
+                deepseek_success = False
+                
+                for retry in range(API_MAX_RETRIES):
+                    try:
+                        print(f"🔄 DeepSeek attempt {retry+1}/{API_MAX_RETRIES}...")
+                        deepseek_response = await asyncio.wait_for(
+                            llm_client.call("deepseek", deepseek_full_prompt),
+                            timeout=API_TIMEOUT
+                        )
+                        deepseek_time = time.time() - deepseek_start
+                        print(f"✅ DeepSeek responded in {deepseek_time:.2f}s")
+                        
+                        place_based_score = extract_score_from_response(deepseek_response, "place_based")
+                        print(f"📊 Extracted score: {place_based_score}/100")
+                        
+                        ds_recs = extract_recommendations_from_response(deepseek_response) or []
+                        print(f"📋 Extracted {len(ds_recs)} recommendations")
+                        
+                        agent_responses.append({
+                            "agent": "DeepSeek",
+                            "role": "Place-based Learning Specialist",
+                            "dimension": "place_based_learning",
+                            "response": deepseek_response,
+                            "analysis": build_analysis_structure(
+                                "place_based_learning", 
+                                place_based_score, 
+                                deepseek_response,
+                                recommendations=ds_recs
+                            ),
+                            "recommendations": ds_recs,
+                            "score": place_based_score,
+                            "time": deepseek_time
+                        })
+                        deepseek_success = True
+                        break
+                        
+                    except Exception as e:
+                        error_msg = str(e)
+                        print(f"❌ DeepSeek attempt {retry+1}/{API_MAX_RETRIES} failed: {error_msg}")
+                        
+                        # 如果是认证错误，不重试
+                        if "403" in error_msg or "401" in error_msg or "insufficient" in error_msg.lower():
+                            print("🔑 Authentication/credit issue - stopping retries")
+                            break
+                        
+                        if retry < API_MAX_RETRIES - 1:
+                            print(f"⏳ Waiting {API_RETRY_DELAY}s before retry...")
+                            await asyncio.sleep(API_RETRY_DELAY)
+                
+                if not deepseek_success:
+                    print("⚠️ DeepSeek: All attempts failed, using zero score")
+                    place_based_score = 0
+                    agent_responses.append({
+                        "agent": "DeepSeek",
+                        "role": "Place-based Learning Specialist",
+                        "dimension": "place_based_learning",
+                        "response": "Service unavailable after retries",
+                        "analysis": build_analysis_structure("place_based_learning", 0, "Service unavailable"),
+                        "recommendations": [],
+                        "score": 0,
+                        "time": 0
+                    })
+            else:
+                print("\n🔵 Agent 1: DeepSeek - ⚠️ DISABLED")
+                place_based_score = 0
+            
+            # ==========================================
+            # AGENT 2: Claude - Cultural & Māori
+            # ✅ 增强版：针对 529 错误的特殊处理
+            # ✅ 合并了 cultural_responsiveness 和 maori_perspectives
+            # ==========================================
+            if ENABLE_CLAUDE:
+                print("\n🟣 Agent 2: Claude (Cultural Responsiveness & Māori Perspectives)")
+                print("-" * 60)
+                
+                claude_full_prompt = claude_prompt_template.replace("{lesson_plan_text}", text)
+                print(f"📝 Using framework prompt ({len(claude_full_prompt)} chars)")
+                
+                claude_start = time.time()
+                claude_success = False
+                
+                for retry in range(API_MAX_RETRIES):
+                    try:
+                        print(f"🔄 Claude attempt {retry+1}/{API_MAX_RETRIES}...")
+                        claude_response = await asyncio.wait_for(
+                            llm_client.call("claude", claude_full_prompt),
+                            timeout=API_TIMEOUT
+                        )
+                        claude_time = time.time() - claude_start
+                        print(f"✅ Claude responded in {claude_time:.2f}s")
+                        
+                        # ✅ 只提取一个分数：cultural_responsiveness
+                        cultural_score = extract_score_from_response(claude_response, "cultural")
+                        print(f"📊 Cultural Responsiveness score: {cultural_score}/100")
+                        
+                        claude_recs = extract_recommendations_from_response(claude_response) or []
+                        print(f"📋 Extracted {len(claude_recs)} recommendations")
+                        
+                        # ✅ 只构建一个维度的 analysis
+                        agent_responses.append({
+                            "agent": "Claude",
+                            "role": "Cultural Responsiveness & Māori Perspectives Specialist",
+                            "dimension": "cultural_responsiveness",  # ✅ 单数
+                            "response": claude_response,
+                            "analysis": build_analysis_structure(
+                                "cultural_responsiveness",
+                                cultural_score,
+                                claude_response,
+                                recommendations=claude_recs
+                            ),
+                            "recommendations": claude_recs,
+                            "score": cultural_score,
+                            "time": claude_time
+                        })
+                        claude_success = True
+                        break
+                        
+                    except Exception as e:
+                        error_msg = str(e)
+                        print(f"❌ Claude attempt {retry+1}/{API_MAX_RETRIES} failed: {error_msg}")
+                        
+                        if "529" in error_msg or "overload" in error_msg.lower():
+                            wait_time = API_RETRY_DELAY * (retry + 1)
+                            print(f"⏳ Server overloaded. Waiting {wait_time}s before retry...")
+                            await asyncio.sleep(wait_time)
+                        elif retry < API_MAX_RETRIES - 1:
+                            print(f"⏳ Waiting {API_RETRY_DELAY}s before retry...")
+                            await asyncio.sleep(API_RETRY_DELAY)
+                
+                if not claude_success:
+                    print("⚠️ Claude: All attempts failed, using zero score")
+                    cultural_score = 0
+                    agent_responses.append({
+                        "agent": "Claude",
+                        "role": "Cultural Responsiveness & Māori Perspectives Specialist",
+                        "dimension": "cultural_responsiveness",  # ✅ 单数
+                        "response": "Service unavailable after retries",
+                        "analysis": build_analysis_structure(
+                            "cultural_responsiveness", 
+                            0, 
+                            "Service unavailable"
+                        ),
+                        "recommendations": [],
+                        "score": 0,
+                        "time": 0
+                    })
+            else:
+                print("\n🟣 Agent 2: Claude - ⚠️ DISABLED")
+                cultural_score = 0
+            
+            
+            # ==========================================
+            # AGENT 3: GPT - Critical Pedagogy
+            # ✅ 增强版：支持开关和重试
+            # ==========================================
+            if ENABLE_GPT:
+                print("\n🟢 Agent 3: GPT (Critical Pedagogy & Engagement Specialist)")
+                print("-" * 60)
+                
+                gpt_full_prompt = gpt_prompt_template.replace("{lesson_plan_text}", text)
+                print(f"📝 Using framework prompt ({len(gpt_full_prompt)} chars)")
+                
+                gpt_start = time.time()
+                gpt_success = False
+                
+                for retry in range(API_MAX_RETRIES):
+                    try:
+                        print(f"🔄 GPT attempt {retry+1}/{API_MAX_RETRIES}...")
+                        gpt_response = await asyncio.wait_for(
+                            llm_client.call("chatgpt", gpt_full_prompt),
+                            timeout=API_TIMEOUT
+                        )
+                        gpt_time = time.time() - gpt_start
+                        print(f"✅ GPT responded in {gpt_time:.2f}s")
+                        
+                        # ✅ 添加详细日志（仅在第一次成功时）
+                        if retry == 0:
+                            print(f"📄 GPT Response preview (first 500 chars):")
+                            print(gpt_response[:500])
+                        
+                        critical_pedagogy_score = extract_score_from_response(gpt_response, "critical")
+                        print(f"📊 Extracted score: {critical_pedagogy_score}/100")
+                        
+                        gpt_recs = extract_recommendations_from_response(gpt_response) or []
+                        print(f"📋 Extracted {len(gpt_recs)} recommendations")
+                        
+                        agent_responses.append({
+                            "agent": "GPT",
+                            "role": "Critical Pedagogy & Engagement Specialist",
+                            "dimension": "critical_pedagogy",
+                            "response": gpt_response,
+                            "analysis": build_analysis_structure(
+                                "critical_pedagogy", 
+                                critical_pedagogy_score, 
+                                gpt_response,
+                                recommendations=gpt_recs
+                            ),
+                            "recommendations": gpt_recs,
+                            "score": critical_pedagogy_score,
+                            "time": gpt_time
+                        })
+                        gpt_success = True
+                        break
+                        
+                    except Exception as e:
+                        error_msg = str(e)
+                        print(f"❌ GPT attempt {retry+1}/{API_MAX_RETRIES} failed: {error_msg}")
+                        if retry < API_MAX_RETRIES - 1:
+                            print(f"⏳ Waiting {API_RETRY_DELAY}s before retry...")
+                            await asyncio.sleep(API_RETRY_DELAY)
+                
+                if not gpt_success:
+                    print("⚠️ GPT: All attempts failed, using zero score")
+                    critical_pedagogy_score = 0
+                    agent_responses.append({
+                        "agent": "GPT",
+                        "role": "Critical Pedagogy & Engagement Specialist",
+                        "dimension": "critical_pedagogy",
+                        "response": "Service unavailable after retries",
+                        "analysis": build_analysis_structure("critical_pedagogy", 0, "Service unavailable"),
+                        "recommendations": [],
+                        "score": 0,
+                        "time": 0
+                    })
+            else:
+                print("\n🟢 Agent 3: GPT - ⚠️ DISABLED")
+                critical_pedagogy_score = 0
+            
+            # ==========================================
+            # 计算综合分数（动态权重）
+            # ✅ 只使用有效的维度
+            # 更新：只有 3 个维度
+            # ==========================================
+            print("\n📊 Computing composite score (dynamic weighting)...")
+            
+            # 收集有效维度
+            active_dimensions = {}
+            if ENABLE_DEEPSEEK and place_based_score > 0:
+                active_dimensions['place_based_learning'] = place_based_score
+            if ENABLE_CLAUDE and cultural_score > 0:
+                active_dimensions['cultural_responsiveness'] = cultural_score  # ✅ 只有这一个
+            if ENABLE_GPT and critical_pedagogy_score > 0:
+                active_dimensions['critical_pedagogy'] = critical_pedagogy_score
+
+            if active_dimensions:
+                original_weights = framework_loader.get_scoring_weights()
+                active_weights = {k: original_weights.get(k, 0) for k in active_dimensions.keys()}
+                total_weight = sum(active_weights.values())
+                
+                if total_weight > 0:
+                    normalized_weights = {k: v/total_weight for k, v in active_weights.items()}
+                    overall_score = calculate_weighted_score(active_dimensions, normalized_weights)
+                else:
+                    overall_score = sum(active_dimensions.values()) / len(active_dimensions)
+                
+                print(f"✅ Active dimensions: {list(active_dimensions.keys())}")
+                print(f"✅ Composite Score: {overall_score}/100")
+                
+                for dim, score in active_dimensions.items():
+                    weight = normalized_weights.get(dim, 0) if total_weight > 0 else 0
+                    print(f"   - {dim}: {score} (weight: {weight*100:.0f}%)")
+            else:
+                print("⚠️ No valid scores from any API")
+                overall_score = 0
+            
+            # ==========================================
+            # 提取推荐建议
+            # ==========================================
+            print("\n💡 Extracting recommendations from agent responses...")
+            
+            all_recommendations_lists = []
+            for response in agent_responses:
+                recs = response.get('recommendations', [])
+                if recs:
+                    print(f"   {response.get('agent', 'Unknown')}: {len(recs)} recommendations")
+                    all_recommendations_lists.append(recs)
+            
+            recommendations = merge_and_deduplicate_recommendations(all_recommendations_lists, max_total=10)
+            print(f"✅ Total unique recommendations: {len(recommendations)}")
+            
+            # ==========================================
+            # 生成改进的教案（如果分数较低）
+            # ==========================================
+            if overall_score < 70 and overall_score > 0:
+                print(f"\n📝 Score {overall_score} below 70, generating improved lesson plan...")
+                
+                try:
+                    improvement_prompt = f"""Based on the evaluation feedback, improve this lesson plan.
+
+Original Lesson Plan:
+{text[:3000]}
+
+Key Recommendations:
+{chr(10).join(f'- {rec}' for rec in recommendations[:5])}
+
+Current Scores:
+- Place-based Learning: {place_based_score}/100
+- Cultural Responsiveness: {cultural_score}/100
+- Critical Pedagogy: {critical_pedagogy_score}/100
+
+Generate an improved lesson plan that addresses these recommendations.
+Return ONLY valid JSON with all required fields for the lesson plan template.
+"""
+                    
+                    cg_response = await asyncio.wait_for(
+                        llm_client.call("chatgpt", improvement_prompt),
+                        timeout=API_TIMEOUT
+                    )
+                    
+                    fields = parse_json_response(cg_response)
+                    
+                    if fields and isinstance(fields, dict) and len(fields) > 5:
+                        lesson_plan_text = generate_lesson_plan_from_fields(fields)
+                        print(f"✅ Generated improved lesson plan")
+                    else:
+                        print(f"⚠️ JSON parsing incomplete, using original text")
+                        lesson_plan_text = text
+                        
+                except asyncio.TimeoutError:
+                    print("⏱️ Lesson plan generation timeout")
+                    lesson_plan_text = text
+                except Exception as e:
+                    print(f"❌ Lesson plan generation error: {str(e)}")
+                    lesson_plan_text = text
+            else:
+                if overall_score == 0:
+                    print(f"\n⚠️ No valid scores, skipping improvement generation")
+                else:
+                    print(f"\n✅ Score {overall_score} is good, no improvement needed")
+                lesson_plan_text = text
+            
+        except asyncio.TimeoutError:
+            print("❌ Overall evaluation timeout")
+            raise HTTPException(status_code=504, detail="Evaluation timeout")
+        except Exception as e:
+            print(f"❌ Evaluation error: {str(e)}")
+            print(traceback.format_exc())
+            raise HTTPException(status_code=500, detail=f"Evaluation failed: {str(e)}")
+    
+    else:
+        # ==========================================
+        # Mock mode 
+        # ==========================================
+        print("\n🧪 Using MOCK mode with enhanced data")
+    
+        place_based_score = 75
+        cultural_score = 85
+        critical_pedagogy_score = 70
+        assessment_quality_score = 85
+        reflective_practice_score = 78
+        
+        weights = framework_loader.get_scoring_weights()
+        dimension_scores = {
+            'place_based_learning': place_based_score,
+            'cultural_responsiveness': cultural_score,
+            'critical_pedagogy': critical_pedagogy_score,
+            'assessment_quality': assessment_quality_score,
+            'reflective_practice': reflective_practice_score
+        }
+        overall_score = calculate_weighted_score(dimension_scores, weights)
+        
+        agent_responses = [
+            {
+                "agent": "DeepSeek",
+                "role": "Place-based Learning Specialist",
+                "dimension": "place_based_learning",
+                "response": "Mock evaluation - Place-based learning analysis with local context integration",
+                "analysis": build_analysis_structure(
+                    "place_based_learning", 
+                    place_based_score, 
+                    "Mock evaluation - This lesson shows good foundation in place-based learning.",
+                    recommendations=[
+                        "Strengthen local context integration with specific regional examples",
+                        "Add community partnerships with local organizations",
+                        "Include fieldwork opportunities in nearby environments",
+                        "Connect to local environmental issues and sustainability"
+                    ],
+                    strengths=[
+                        "Uses local examples from the community",
+                        "Encourages outdoor learning activities",
+                        "Connects to regional geography and ecosystems"
+                    ],
+                    gaps=[
+                        "Limited connection to specific local landmarks",
+                        "Could include more iwi-led environmental knowledge",
+                        "Fieldwork details need more structure"
+                    ]
+                ),
+                "recommendations": [
+                    "Strengthen local context integration with specific regional examples",
+                    "Add community partnerships with local organizations",
+                    "Include fieldwork opportunities in nearby environments"
+                ],
+                "score": place_based_score,
+                "time": 0.5
+            },
+            {
+                "agent": "Claude",
+                "role": "Cultural Responsiveness & Māori Perspectives Specialist",
+                "dimension": "cultural_responsiveness",
+                "response": "Mock evaluation - Cultural responsiveness and Māori perspectives analysis",
+                "analysis": build_analysis_structure(
+                    "cultural_responsiveness", 
+                    cultural_score, 
+                    "Mock evaluation - The lesson demonstrates cultural awareness and Māori integration.",
+                    recommendations=[
+                        "Include more Te Reo Māori vocabulary throughout",
+                        "Consult with local iwi for cultural protocols",
+                        "Add culturally diverse perspectives to content",
+                        "Embed mātauranga Māori knowledge systems",
+                        "Use appropriate karakia and mihi protocols"
+                    ],
+                    strengths=[
+                        "Acknowledges cultural context of the topic",
+                        "References tikanga Māori appropriately",
+                        "Creates inclusive learning environment",
+                        "Shows respect for Māori worldviews",
+                        "Attempts to include Te Reo"
+                    ],
+                    gaps=[
+                        "Limited use of Te Reo Māori language",
+                        "Mātauranga Māori not central to curriculum",
+                        "Could strengthen iwi consultation",
+                        "Limited depth in Māori philosophical concepts"
+                    ],
+                    cultural_elements=[
+                        "Tikanga references",
+                        "Basic Te Reo vocabulary",
+                        "Acknowledgment of local iwi"
+                    ]
+                ),
+                "recommendations": [
+                    "Include more Te Reo Māori vocabulary throughout",
+                    "Consult with local iwi for cultural protocols",
+                    "Embed mātauranga Māori knowledge systems",
+                    "Use appropriate karakia and mihi protocols"
+                ],
+                "score": cultural_score,
+                "time": 0.6
+            },
+            {
+                "agent": "GPT",
+                "role": "Critical Pedagogy & Engagement Specialist",
+                "dimension": "critical_pedagogy",
+                "response": "Mock evaluation - Critical pedagogy and student engagement analysis",
+                "analysis": build_analysis_structure(
+                    "critical_pedagogy", 
+                    critical_pedagogy_score, 
+                    "Mock evaluation - The lesson shows good pedagogical strategies.",
+                    recommendations=[
+                        "Enhance student agency with more choice in learning activities",
+                        "Add formative assessment with student self-reflection",
+                        "Include collaborative problem-solving tasks",
+                        "Encourage critical questioning of assumptions"
+                    ],
+                    strengths=[
+                        "Good questioning strategies to promote thinking",
+                        "Includes student discussion opportunities",
+                        "Offers some choice in activities"
+                    ],
+                    gaps=[
+                        "Limited student voice in decision-making",
+                        "Could strengthen critical analysis components",
+                        "Assessment could be more student-centered"
+                    ]
+                ),
+                "recommendations": [
+                    "Enhance student agency with more choice in learning activities",
+                    "Add formative assessment with student self-reflection",
+                    "Include collaborative problem-solving tasks"
+                ],
+                "score": critical_pedagogy_score,
+                "time": 0.4
+            },
+            {
+                "agent": "Assessment Specialist",
+                "role": "Assessment Quality Specialist",
+                "dimension": "assessment_quality",
+                "response": "Mock evaluation - Assessment quality and feedback analysis",
+                "analysis": build_analysis_structure(
+                    "assessment_quality",
+                    assessment_quality_score,
+                    "Mock evaluation - Assessment strategies are well-designed.",
+                    recommendations=[
+                        "Add rubrics with clear success criteria",
+                        "Include peer and self-assessment opportunities",
+                        "Provide timely formative feedback loops",
+                        "Align assessments with learning objectives"
+                    ],
+                    strengths=[
+                        "Uses multiple assessment methods",
+                        "Clear connection to learning objectives",
+                        "Includes observation and performance tasks"
+                    ],
+                    gaps=[
+                        "Could add more student self-assessment",
+                        "Rubrics not explicitly provided",
+                        "Limited peer feedback opportunities"
+                    ]
+                ),
+                "recommendations": [
+                    "Add rubrics with clear success criteria",
+                    "Include peer and self-assessment opportunities",
+                    "Provide timely formative feedback loops"
+                ],
+                "score": assessment_quality_score,
+                "time": 0.3
+            },
+            {
+                "agent": "Reflection Specialist",
+                "role": "Reflective Practice Specialist",
+                "dimension": "reflective_practice",
+                "response": "Mock evaluation - Reflective practice and metacognition analysis",
+                "analysis": build_analysis_structure(
+                    "reflective_practice",
+                    reflective_practice_score,
+                    "Mock evaluation - Reflection opportunities are incorporated.",
+                    recommendations=[
+                        "Build in structured reflection time after key activities",
+                        "Use learning journals for ongoing metacognition",
+                        "Facilitate group reflection discussions",
+                        "Model teacher reflection and thinking aloud"
+                    ],
+                    strengths=[
+                        "Includes end-of-lesson reflection activity",
+                        "Encourages students to share learning",
+                        "Promotes metacognitive thinking"
+                    ],
+                    gaps=[
+                        "Reflection could be more structured",
+                        "Limited ongoing reflection throughout lesson",
+                        "Could add learning journals or portfolios"
+                    ]
+                ),
+                "recommendations": [
+                    "Build in structured reflection time after key activities",
+                    "Use learning journals for ongoing metacognition",
+                    "Facilitate group reflection discussions"
+                ],
+                "score": reflective_practice_score,
+                "time": 0.3
+            }
+        ]
+        
+        recommendations = [
+            "Strengthen local context integration with specific regional examples",
+            "Include more Te Reo Māori vocabulary throughout",
+            "Enhance student agency with more choice in learning activities",
+            "Add community partnerships with local organizations",
+            "Consult with local iwi for cultural protocols",
+            "Embed mātauranga Māori knowledge systems",
+            "Add rubrics with clear success criteria",
+            "Build in structured reflection time after key activities",
+            "Include fieldwork opportunities in nearby environments",
+            "Use appropriate karakia and mihi protocols"
+        ]
+        
+        lesson_plan_text = text
+    
+    # ==========================================
+    # 保存到数据库
+    # ==========================================
+    try:
+        print(f"\n💾 Saving evaluation to database...")
+        
+        eval_id = db.create_evaluation(
+            lesson_plan_text=text,
+            lesson_plan_title=title,
+            grade_level=grade_level,
+            subject_area=subject_area,
+            api_mode=API_MODE
+        )
+        
+        db.update_evaluation_scores(
+            eval_id=eval_id,
+            place_based_score=place_based_score,
+            cultural_score=cultural_score,
+            overall_score=overall_score
+        )
+        
+        db.update_evaluation_results(
+            eval_id=eval_id,
+            agent_responses=agent_responses,
+            debate_transcript={},
+            recommendations=recommendations,
+            status="completed"
+        )
+        
+        print(f"✅ Evaluation saved successfully")
+        
+    except Exception as e:
+        print(f"❌ Database error: {str(e)}")
+        print(traceback.format_exc())
+    
+    return {
+        "status": "success",
+        "evaluation_id": eval_id,
+        "agent_responses": agent_responses,
+        "recommendations": recommendations,
+        "scores": {
+            "place_based_learning": place_based_score,
+            "cultural_responsiveness": cultural_score,
+            "critical_pedagogy": critical_pedagogy_score,
+            "assessment_quality": assessment_quality_score,  
+            "reflective_practice": reflective_practice_score,  
+            "overall": overall_score
+        },
+        "framework_info": {
+            "weights_applied": framework_loader.get_scoring_weights(),
+            "dimensions_evaluated": [
+                "place_based_learning",
+                "cultural_responsiveness",
+                "critical_pedagogy"
+            ],
+            "framework_version": framework_loader.load_theoretical_framework()
+                                .get('framework_metadata', {})
+                                .get('version', '2.0'),
+            # ✅ 新增：显示哪些 API 被使用了
+            "apis_used": {
+                "deepseek": ENABLE_DEEPSEEK and place_based_score > 0,
+                "claude": ENABLE_CLAUDE and cultural_score > 0,
+                "gpt": ENABLE_GPT and critical_pedagogy_score > 0
+            }
+        },
+        "improved_lesson_plan": lesson_plan_text,
+        "mode": API_MODE
+    }
+
+
+@app.post("/api/improve-lesson")
+@timing_decorator
+async def improve_lesson(request: ImproveLessonRequest):
+    """改进教案端点"""
+    try:
+        improvement_prompt = f"""Improve this lesson plan based on the recommendations and scores.
+
+Title: {request.lesson_title}
+Grade Level: {request.grade_level}
+Subject Area: {request.subject_area}
+
+Current Scores:
+{json.dumps(request.scores, indent=2)}
+
+Top Recommendations:
+{chr(10).join(f'{i+1}. {rec}' for i, rec in enumerate(request.recommendations[:5]))}
+
+Original Lesson Plan:
+{request.original_lesson[:5000]}
+
+Generate an improved lesson plan that addresses these recommendations.
+Return ONLY valid JSON with these keys:
+knowledge, skills, values, prior_knowledge, interests, challenges,
+learning_styles, accommodations, key_concepts, focus_challenges,
+methods, strategies, teacher_prep, student_prep,
+intro_duration, intro_tasks, intro_teacher_actions, intro_student_activities,
+main_duration, main_tasks, main_teacher_actions, main_student_activities,
+investigation_duration, investigation_tasks, investigation_teacher_actions, investigation_student_activities,
+conclusion_duration, conclusion_tasks, conclusion_teacher_actions, conclusion_student_activities,
+extension_duration, extension_tasks, extension_teacher_actions, extension_student_activities,
+formative, summative, feedback, materials, tech_tools
+"""
+        
+        llm_client = LLMClient()
+        response = await asyncio.wait_for(
+            llm_client.call("chatgpt", improvement_prompt),
+            timeout=120.0
+        )
+        
+        fields = parse_json_response(response)
+        
+        if not fields or not isinstance(fields, dict):
+            print("⚠️ Failed to parse JSON, using default fields")
+            fields = {}
+        
+        improved_lesson = generate_lesson_plan_from_fields(fields)
+        
+        return {
+            "status": "success",
+            "improved_lesson": improved_lesson,
+            "original_title": request.lesson_title,
+            "recommendations_applied": len(request.recommendations),
+            "fields_generated": len(fields)
+        }
+        
+    except asyncio.TimeoutError:
+        raise HTTPException(status_code=504, detail="Improvement generation timeout")
+    except Exception as e:
+        print(f"❌ Error improving lesson: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Improvement failed: {str(e)}")
+
+
+@app.post("/api/convert-to-word")
+async def convert_to_word(request: dict):
+    """将教案转换为 Word 文档"""
+    try:
+        from docx import Document
+        from io import BytesIO
+        
+        doc = Document()
+        doc.add_heading(request.get('title', 'Lesson Plan'), 0)
+        
+        content = request.get('content', '')
+        for paragraph in content.split('\n'):
+            if paragraph.strip():
+                doc.add_paragraph(paragraph)
+        
+        file_stream = BytesIO()
+        doc.save(file_stream)
+        file_stream.seek(0)
+        
+        from fastapi.responses import StreamingResponse
+        return StreamingResponse(
+            file_stream,
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            headers={
+                "Content-Disposition": f"attachment; filename=Improved_lesson_plan.docx"
+            }
+        )
+        
+    except Exception as e:
+        print(f"❌ Word conversion error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/evaluations")
+async def get_evaluations(
+    limit: int = 20,
+    offset: int = 0,
+    db: Database = Depends(get_db)
+):
+    """获取历史评估记录列表"""
+    try:
+        print(f"\n📚 Fetching evaluations: limit={limit}, offset={offset}")
+        
+        evaluations = db.get_all_evaluations(limit=limit)
+        
+        if not evaluations:
+            print("ℹ️ No evaluations found in database")
+            return {
+                "status": "success",
+                "evaluations": [],
+                "count": 0
+            }
+        
+        print(f"✅ Retrieved {len(evaluations)} evaluations")
+        
+        formatted_evaluations = []
+        for eval_record in evaluations:
+            try:
+                agent_responses = json.loads(eval_record.get("agent_responses", "[]"))
+                recommendations = json.loads(eval_record.get("recommendations", "[]"))
+            except:
+                agent_responses = []
+                recommendations = []
+            
+            scores = {
+                "place_based_learning": eval_record.get("place_based_score", 0),
+                "cultural_responsiveness": eval_record.get("cultural_score", 0),
+                "maori_perspectives": eval_record.get("cultural_score", 0),
+                "critical_pedagogy": eval_record.get("critical_pedagogy_score", 0)
+            }
+            
+            formatted_evaluations.append({
+                "id": eval_record.get("id"),
+                "lesson_title": eval_record.get("lesson_plan_title") or eval_record.get("lesson_title", "Untitled"),
+                "grade_level": eval_record.get("grade_level", "N/A"),
+                "subject_area": eval_record.get("subject_area", "N/A"),
+                "overall_score": eval_record.get("overall_score", 0),
+                "scores": scores,
+                "created_at": eval_record.get("created_at"),
+                "status": eval_record.get("status", "completed"),
+                "mode": eval_record.get("api_mode", "real")
+            })
+        
+        return {
+            "status": "success",
+            "evaluations": formatted_evaluations,
+            "count": len(formatted_evaluations)
+        }
+        
+    except Exception as e:
+        print(f"❌ Error fetching evaluations: {str(e)}")
+        print(traceback.format_exc())
+        return {
+            "status": "success",
+            "evaluations": [],
+            "count": 0
+        }
+
+
+@app.get("/api/evaluations/{evaluation_id}")
+async def get_evaluation_by_id(
+    evaluation_id: int,
+    db: Database = Depends(get_db)
+):
+    """获取单个评估记录的详细信息"""
+    try:
+        print(f"\n🔍 Fetching evaluation ID: {evaluation_id}")
+        
+        evaluation = db.get_evaluation(evaluation_id)
+        
+        if not evaluation:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Evaluation {evaluation_id} not found"
+            )
+        
+        print(f"✅ Retrieved evaluation: {evaluation.get('lesson_plan_title', 'Untitled')}")
+        
+        try:
+            evaluation["agent_responses"] = json.loads(evaluation.get("agent_responses", "[]"))
+        except:
+            evaluation["agent_responses"] = []
+        
+        try:
+            evaluation["recommendations"] = json.loads(evaluation.get("recommendations", "[]"))
+        except:
+            evaluation["recommendations"] = []
+        
+        try:
+            evaluation["debate_transcript"] = json.loads(evaluation.get("debate_transcript", "{}"))
+        except:
+            evaluation["debate_transcript"] = {}
+        
+        return {
+            "status": "success",
+            "evaluation": evaluation
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error fetching evaluation: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve evaluation: {str(e)}"
+        )
+
+
+@app.delete("/api/evaluations/{evaluation_id}")
+async def delete_evaluation(
+    evaluation_id: int,
+    db: Database = Depends(get_db)
+):
+    """删除指定的评估记录"""
+    try:
+        print(f"\n🗑️ Deleting evaluation ID: {evaluation_id}")
+        
+        evaluation = db.get_evaluation(evaluation_id)
+        if not evaluation:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Evaluation {evaluation_id} not found"
+            )
+        
+        db.delete_evaluation(evaluation_id)
+        
+        print(f"✅ Deleted evaluation ID: {evaluation_id}")
+        
+        return {
+            "status": "success",
+            "message": f"Evaluation {evaluation_id} deleted successfully"
+        }
+        
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error deleting evaluation: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to delete evaluation: {str(e)}"
+        )
+
+
+print("\n" + "="*60)
+print("🚀 Lesson Plan Evaluator API with Theoretical Framework")
+print("="*60)
+
+try:
+    framework = framework_loader.load_theoretical_framework()
+    framework_name = framework.get('framework_metadata', {}).get('name', 'Default')
+    dimensions = list(framework.get('dimensions', {}).keys())
+    
+    print(f"📚 Framework: {framework_name}")
+    print(f"📊 Dimensions: {', '.join(dimensions)}")
+    print(f"🤖 API Mode: {API_MODE}")
+    print(f"💾 Database: Connected")
+    
+    agent_design = framework_loader.load_agent_design()
+    agents = agent_design.get('agents', {})
+    print(f"\n🎯 Configured Agents:")
+    for agent_id, agent_info in agents.items():
+        print(f"   • {agent_info['name']}: {agent_info['role']}")
+    
+    weights = framework_loader.get_scoring_weights()
+    print(f"\n⚖️  Scoring Weights:")
+    for dim, weight in weights.items():
+        print(f"   • {dim}: {weight*100:.0f}%")
+    
+except Exception as e:
+    print(f"⚠️ Warning: Could not load framework details: {e}")
+
+print("="*60)
+print("✅ API is ready to accept requests!")
+print("="*60 + "\n")
