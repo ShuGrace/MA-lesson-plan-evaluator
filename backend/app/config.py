@@ -33,21 +33,21 @@ DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
 DEEPSEEK_BASE_URL = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")
 
 # ============================================================
-# Framework v3.0 Configuration
+# Framework Configuration
 # ============================================================
 FRAMEWORK_VERSION = "3.0"
 FRAMEWORK_FILE = "theoretical_framework.json"
 AGENT_DESIGN_FILE = "agent_design.json"
 
 # ============================================================
-# API Enable/Disable Switches (Framework v3.0)
+# API Enable/Disable Switches (Framework )
 # ============================================================
 ENABLE_DEEPSEEK = os.getenv("ENABLE_DEEPSEEK", "true").lower() == "true"
 ENABLE_CLAUDE = os.getenv("ENABLE_CLAUDE", "true").lower() == "true"
 ENABLE_GPT = os.getenv("ENABLE_GPT", "true").lower() == "true"
 
 # ============================================================
-# API Timeout and Retry Configuration (Framework v3.0)
+# API Timeout and Retry Configuration (Framework )
 # ============================================================
 API_TIMEOUT = int(os.getenv("API_TIMEOUT", "180"))  # seconds
 API_MAX_RETRIES = int(os.getenv("API_MAX_RETRIES", "5"))
@@ -76,7 +76,7 @@ DEBUG_API_CALLS = os.getenv("DEBUG_API_CALLS", "false").lower() == "true"
 # Startup Information
 # ============================================================
 print(f"[Config] ============================================================")
-print(f"[Config] Framework Version: {FRAMEWORK_VERSION}")
+print(f"[Config] Framework Loaded")
 print(f"[Config] API Mode: {API_MODE}")
 print(f"[Config] Database: {DATABASE_URL.split('@')[0] if '@' in DATABASE_URL else DATABASE_URL}")
 print(f"[Config] ============================================================")
@@ -87,8 +87,8 @@ print(f"  - OpenAI:    {'✅ Set' if OPENAI_KEY else '❌ Missing'}")
 print(f"  - Anthropic: {'✅ Set' if ANTHROPIC_KEY else '❌ Missing'}")
 print(f"  - DeepSeek:  {'✅ Set' if DEEPSEEK_KEY else '❌ Missing'}")
 
-# API Switches Status (Framework v3.0)
-print(f"[Config] API Switches (Framework v3.0):")
+# API Switches Status
+print(f"[Config] API Switches :")
 print(f"  - DeepSeek: {'✅ Enabled' if ENABLE_DEEPSEEK else '⚠️  Disabled'}")
 print(f"  - Claude:   {'✅ Enabled' if ENABLE_CLAUDE else '⚠️  Disabled'}")
 print(f"  - GPT:      {'✅ Enabled' if ENABLE_GPT else '⚠️  Disabled'}")

@@ -118,16 +118,15 @@
 #### **1. Clone Repository**
 ```bash
 git clone https://github.com/yourusername/lesson-evaluator.git
-cd lesson-evaluator
-
-
-
-
-cd backend
+cd lesson-evaluator\backend
 
 # Create virtual environment
 python -m venv venv
+
+# Open virtual environment
+(VE is in backend, so you need go to backend and then carry on the code to open VE)
 source venv/bin/activate  # On Windows: venv\Scripts\activate
+.\.venv\Scripts\activate    # powershell
 
 # Install dependencies
 pip install -r requirements.txt
@@ -137,11 +136,7 @@ cp .env.example .env.development
 # Edit .env.development with your API keys
 
 # Run backend
-python -m uvicorn main:app --reload
-
-
-
-
+python -m uvicorn app.main:app --reload --port 8000
 
 cd frontend
 
@@ -220,3 +215,52 @@ lesson-evaluator/
 │   │   └── App.css
 │   └── package.json
 └── README.md                         # ✅ v3.0 updated
+```
+
+
+# System Architecture
+
+Multi-Agent Lesson Plan Evaluator - Framework v3.0
+
+Overview
+Full-stack web app for evaluating lesson plans using 4 specialized AI agents.
+
+Tech Stack
+Code
+React Frontend (Port 3000) 
+    ↓ API calls
+FastAPI Backend (Port 8000)
+    ↓ Parallel requests
+4 AI Agents → 3 LLM Providers
+    ↓ Results
+SQLite/PostgreSQL Database
+Backend (Python)
+Framework: FastAPI + Uvicorn
+Database: SQLite (dev) / PostgreSQL (prod)
+Deployment: Gunicorn on Railway
+Key Services:
+llm_client.py - API client for 3 LLMs
+framework_loader.py - Load evaluation framework
+evaluation_helpers.py - Score aggregation
+Frontend (React)
+Stack: React 19 + Vite 7
+UI: lucide-react icons
+Dev Server: Port 3000, proxies to backend 8000
+Entry: App.jsx
+4 AI Agents
+DeepSeek - Place-Based Learning (25%)
+Claude Sonnet 4 - Cultural Responsiveness & Māori Perspectives (35%)
+GPT-4o (Critical) - Critical Pedagogy (25%)
+GPT-4o (Design) - Lesson Design Quality (15%)
+Data Flow
+Code
+User submits lesson plan 
+  → FastAPI receives request
+  → Calls 4 LLMs in parallel
+  → Each returns dimension score (1-5)
+  → Weighted aggregation
+  → Returns JSON result
+Key Features
+Resilient: Continues on API failure, dynamic weight normalization
+Flexible: Mock/real API modes, individual API on/off switches
+Reliable: Exponential backoff retry (max 5 attempts)

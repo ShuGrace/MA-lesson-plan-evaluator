@@ -70,21 +70,37 @@ class Database:
         lesson_plan_title: Optional[str] = None,
         grade_level: Optional[str] = None,
         subject_area: Optional[str] = None,
+        place_based_score: int = 0,  # ✅ 新增
+        cultural_score: int = 0,  # ✅ 新增
+        critical_pedagogy_score: int = 0,  # ✅ 新增 v3.0
+        lesson_design_score: int = 0,  # ✅ 新增 v3.0
+        overall_score: int = 0,  # ✅ 新增
+        agent_responses: List[Dict] = None,  # ✅ 新增
+        recommendations: List[str] = None,  # ✅ 新增
+        provider: str = "gpt",  # ✅ 新增 Ensemble mode
         api_mode: str = "mock"
     ) -> int:
         cursor = self.conn.cursor()
         cursor.execute(
             """
             INSERT INTO evaluations (
-                lesson_plan_text,
-                lesson_plan_title,
-                grade_level,
-                subject_area,
-                api_mode,
-                status
-            ) VALUES (?, ?, ?, ?, ?, 'pending')
+            lesson_plan_text,
+            lesson_plan_title,
+            grade_level,
+            subject_area,
+            place_based_score,
+            cultural_score,
+            critical_pedagogy_score,
+            lesson_design_score,
+            overall_score,
+            agent_responses,
+            recommendations,
+            provider,
+            api_mode,
+            status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed')
             """,
-            (lesson_plan_text, lesson_plan_title, grade_level, subject_area, api_mode)
+            (lesson_plan_text, lesson_plan_title, grade_level, subject_area, place_based_score, cultural_score, critical_pedagogy_score, lesson_design_score, overall_score, json.dumps(agent_responses) if agent_responses else None, json.dumps(recommendations) if recommendations else None, provider, api_mode)
         )
         self.conn.commit()
         return cursor.lastrowid
